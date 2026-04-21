@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp 智能客户系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 280px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #075e54;
+            color: white;
+        }
+        
+        .sidebar-header h1 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .status {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .status.connected {
+            color: #4caf50;
+        }
+        
+        .status.disconnected {
+            color: #f44336;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab:hover {
+            background: #f5f5f5;
+        }
+        
+        .nav-tab.active {
+            color: #075e54;
+            border-bottom-color: #075e54;
+        }
+        
+        .customer-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .customer-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .customer-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .customer-item.active {
+            background: #e3f2fd;
+        }
+        
+        .customer-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .customer-phone {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .customer-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-new {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .badge-lead {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .badge-returning {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .badge-bot {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .badge-handover {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        /* 客户标签样式 */
+        .customer-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        
+        .customer-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        /* 聊天区域 */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #e5ddd5;
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-header-info h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .chat-header-info span {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #075e54;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #128c7e;
+        }
+        
+        .btn-secondary {
+            background: #fff;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .message {
+            max-width: 70%;
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .message.incoming {
+            background: white;
+            margin-right: auto;
+            border-bottom-left-radius: 2px;
+        }
+        
+        .message.outgoing {
+            background: #dcf8c6;
+            margin-left: auto;
+            border-bottom-right-radius: 2px;
+        }
+        
+        .message-sender {
+            font-size: 12px;
+            color: #075e54;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .message-content {
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            text-align: right;
+        }
+        
+        .input-area {
+            padding: 15px 20px;
+            background: #f0f0f0;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .input-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .toolbar-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .toolbar-btn:hover {
+            background: #f5f5f5;
+            border-color: #075e54;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: #075e54;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-btn:hover {
+            background: #128c7e;
+        }
+        
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+        
+        .empty-state h3 {
+            margin-top: 20px;
+            font-weight: 400;
+        }
+        
+        /* 分类选择器 */
+        .category-selector {
+            padding: 10px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .category-selector select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        /* 标签内容 */
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .tab-content.hidden {
+            display: none;
+        }
+        
+        /* 模态框样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #075e54;
+        }
+        
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .file-name-display {
+            padding: 10px 12px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* 客户详情样式 */
+        .detail-section {
+            margin-bottom: 20px;
+        }
+        
+        .detail-section h4 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .detail-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .detail-stat:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .detail-stat-value {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .tag-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .tag-option {
+            padding: 6px 12px;
+            border: 2px solid #ddd;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tag-option.selected {
+            border-color: #075e54;
+            background: #e3f2fd;
+        }
+        
+        /* 知识库样式 */
+        .knowledge-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .document-list {
+            padding: 10px;
+        }
+        
+        .document-item {
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .document-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .document-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .document-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* 设置样式 */
+        .settings-section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .settings-section h3 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        /* 开关样式 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+            margin-right: 10px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 26px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #075e54;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        
+        .setting-label {
+            vertical-align: super;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤖 WhatsApp CRM</h1>
+                <div class="status disconnected" id="connectionStatus">
+                    ● 未连接
+                </div>
+                <div id="loginNumber" style="margin-top: 5px; font-size: 13px; color: #4caf50; font-weight: bold;">
+                    <!-- 显示当前登录号码 -->
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="refreshStatus()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        🔄 刷新
+                    </button>
+                    <button onclick="logoutWhatsApp()" style="background: rgba(244,67,54,0.3); border: 1px solid rgba(244,67,54,0.5); color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        🚪 退出登录
+                    </button>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px;">
+                    <a href="/static/admin.html" style="color: #fff; text-decoration: underline;">⚙️ 系统管理</a>
+                </div>
+            </div>
+            
+            <div class="nav-tabs">
+                <div class="nav-tab active" data-tab="customers">客户</div>
+                <div class="nav-tab" data-tab="knowledge">知识库</div>
+                <div class="nav-tab" data-tab="settings">设置</div>
+            </div>
+            
+            <div class="category-selector">
+                <select id="categoryFilter">
+                    <option value="">全部客户</option>
+                    <option value="new">新客户</option>
+                    <option value="lead">意向客户</option>
+                    <option value="returning">老客户</option>
+                </select>
+            </div>
+            
+            <div class="customer-list" id="customerList">
+                <!-- 客户列表将在这里渲染 -->
+            </div>
+            
+            <div class="tab-content hidden" id="knowledgeTab">
+                <div class="knowledge-header">
+                    <button class="btn btn-primary" id="addDocBtn">+ 添加文档</button>
+                </div>
+                <div class="document-list" id="documentList">
+                    <!-- 文档列表将在这里渲染 -->
+                </div>
+            </div>
+            
+            <div class="tab-content hidden" id="settingsTab">
+                <div class="settings-section">
+                    <h3>AI自动回复</h3>
+                    <label class="switch">
+                        <input type="checkbox" id="aiAutoReply">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="setting-label">启用AI自动回复</span>
+                </div>
+                <div class="settings-section">
+                    <h3>浏览器通知</h3>
+                    <button class="btn btn-secondary" id="enableNotifyBtn">启用通知</button>
+                </div>
+                <div class="settings-section">
+                    <h3>WhatsApp 状态</h3>
+                    <button class="btn btn-secondary" id="manageStatusBtn">管理状态</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 聊天区域 -->
+        <div class="chat-area">
+            <div class="empty-state" id="emptyState">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <h3>选择一个客户开始聊天</h3>
+            </div>
+            
+            <div class="chat-header" id="chatHeader" style="display: none;">
+                <div class="chat-header-info">
+                    <h3 id="chatCustomerName">--</h3>
+                    <span id="chatCustomerPhone">--</span>
+                </div>
+                <div class="chat-actions">
+                    <button class="btn btn-secondary" id="changeCategoryBtn">修改分类</button>
+                    <button class="btn btn-primary" id="handoverBtn">接手会话</button>
+                </div>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer" style="display: none;">
+                <!-- 消息将在这里渲染 -->
+            </div>
+            
+            <div class="input-area" id="inputArea" style="display: none;">
+                <div class="input-toolbar">
+                    <button class="toolbar-btn" id="aiReplyBtn" title="AI智能回复">🤖 AI回复</button>
+                    <button class="toolbar-btn" id="kbBtn" title="知识库">📚 知识库</button>
+                    <button class="toolbar-btn" id="attachBtn" title="发送文件">📎 附件</button>
+                    <button class="toolbar-btn" id="customerDetailBtn" title="客户详情">👤 详情</button>
+                </div>
+                <div class="input-row">
+                    <input type="text" class="message-input" id="messageInput" 
+                           placeholder="输入消息..." disabled>
+                    <button class="send-btn" id="sendBtn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <!-- 隐藏的文件输入 -->
+                <input type="file" id="mediaFileInput" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+            </div>
+        </div>
+    </div>
+    
+    <!-- 客户详情模态框 -->
+    <div id="customerDetailModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>客户详情</h3>
+                <button class="modal-close" onclick="closeCustomerDetail()">&times;</button>
+            </div>
+            <div class="modal-body" id="customerDetailBody">
+                <!-- 动态内容 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCustomerDetail()">关闭</button>
+                <button class="btn btn-primary" onclick="saveCustomerDetail()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 多媒体发送模态框 -->
+    <div id="mediaSendModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>发送文件</h3>
+                <button class="modal-close" onclick="closeMediaModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>文件类型</label>
+                    <select id="mediaTypeSelect" class="form-control">
+                        <option value="image">📷 图片</option>
+                        <option value="video">🎬 视频</option>
+                        <option value="document">📄 文档</option>
+                        <option value="audio">🎵 音频</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>说明文字（可选）</label>
+                    <input type="text" id="mediaCaption" class="form-control" placeholder="添加说明...">
+                </div>
+                <div class="form-group">
+                    <label>已选文件</label>
+                    <div id="selectedFileName" class="file-name-display">未选择文件</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeMediaModal()">取消</button>
+                <button class="btn btn-primary" onclick="sendMediaFile()">发送</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 状态管理模态框 -->
+    <div id="statusModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>WhatsApp 状态管理</h3>
+                <button class="modal-close" onclick="closeStatusModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>状态消息</label>
+                    <textarea id="statusMessageInput" class="form-control" rows="3" placeholder="输入状态消息..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>显示名称</label>
+                    <input type="text" id="profileNameInput" class="form-control" placeholder="输入显示名称...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeStatusModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveStatusSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API 基础 URL
+        const API_BASE = 'http://localhost:8000/api';
+        const WS_URL = 'ws://localhost:8000/ws';
+        
+        // 状态
+        let currentCustomer = null;
+        let customers = [];
+        let ws = null;
+        
+        // DOM 元素
+        const customerListEl = document.getElementById('customerList');
+        const emptyStateEl = document.getElementById('emptyState');
+        const chatHeaderEl = document.getElementById('chatHeader');
+        const messagesContainerEl = document.getElementById('messagesContainer');
+        const inputAreaEl = document.getElementById('inputArea');
+        const messageInputEl = document.getElementById('messageInput');
+        const sendBtnEl = document.getElementById('sendBtn');
+        const connectionStatusEl = document.getElementById('connectionStatus');
+        const categoryFilterEl = document.getElementById('categoryFilter');
+        const mediaFileInput = document.getElementById('mediaFileInput');
+        
+        // 全局变量
+        let selectedMediaFile = null;
+        let availableTags = [];
+        let currentCustomerDetail = null;
+        
+        // 初始化
+        async function init() {
+            await checkStatus();
+            await loadCustomers();
+            connectWebSocket();
+            
+            // 定期刷新
+            setInterval(loadCustomers, 5000);
+        }
+        
+        // 检查系统状态
+        async function checkStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/auth/status`);
+                const data = await res.json();
+                
+                if (data.connected && data.logged_in) {
+                    connectionStatusEl.textContent = '● 已连接';
+                    connectionStatusEl.className = 'status connected';
+                    
+                    // 显示登录号码
+                    const loginNumberEl = document.getElementById('loginNumber');
+                    if (data.current_user) {
+                        loginNumberEl.textContent = `📱 +${data.current_user}`;
+                    } else {
+                        loginNumberEl.textContent = '';
+                    }
+                } else {
+                    connectionStatusEl.textContent = '● WhatsApp 未登录';
+                    connectionStatusEl.className = 'status disconnected';
+                    document.getElementById('loginNumber').textContent = '';
+                }
+            } catch (e) {
+                connectionStatusEl.textContent = '● 服务未启动';
+                connectionStatusEl.className = 'status disconnected';
+                document.getElementById('loginNumber').textContent = '';
+            }
+        }
+        
+        // 刷新状态
+        async function refreshStatus() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ 刷新中...';
+            
+            await checkStatus();
+            await loadCustomers();
+            
+            btn.disabled = false;
+            btn.textContent = '🔄 刷新';
+            
+            // 显示提示
+            showToast('状态已刷新');
+        }
+        
+        // 退出登录
+        async function logoutWhatsApp() {
+            if (!confirm('确定要退出 WhatsApp 登录吗？\n\n退出后需要重新扫码登录。')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/auth/logout`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast('退出登录成功');
+                    // 刷新状态
+                    await checkStatus();
+                    await loadCustomers();
+                    // 跳转到登录页
+                    setTimeout(() => {
+                        window.location.href = '/static/login.html';
+                    }, 1500);
+                } else {
+                    alert('退出登录失败：' + (data.message || '未知错误'));
+                }
+            } catch (e) {
+                alert('退出登录失败，请检查网络连接');
+                console.error('Logout error:', e);
+            }
+        }
+        
+        // 显示提示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #333;
+                color: #fff;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+        
+        // 加载客户列表
+        async function loadCustomers() {
+            try {
+                const category = categoryFilterEl.value;
+                const url = category 
+                    ? `${API_BASE}/customers?category=${category}`
+                    : `${API_BASE}/customers`;
+                
+                const res = await fetch(url);
+                customers = await res.json();
+                renderCustomerList();
+            } catch (e) {
+                console.error('加载客户失败:', e);
+            }
+        }
+        
+        // 获取客户显示名称（有名字用名字，没有名字用手机号码）
+        function getCustomerDisplayName(customer) {
+            return customer.name && customer.name.trim() ? customer.name : customer.phone;
+        }
+        
+        // 渲染客户列表
+        function renderCustomerList() {
+            customerListEl.innerHTML = customers.map(c => `
+                <div class="customer-item ${currentCustomer?.id === c.id ? 'active' : ''}" 
+                     data-id="${c.id}">
+                    <div class="customer-name">
+                        ${c.phone}
+                        ${c.name && c.name !== c.phone ? `<span style="color: #666; font-weight: normal; margin-left: 8px;">(${escapeHtml(c.name)})</span>` : ''}
+                    </div>
+                    ${c.tags && c.tags.length > 0 ? `
+                    <div class="customer-tags">
+                        ${c.tags.map(tag => `
+                            <span class="customer-tag" style="background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;">${escapeHtml(tag.name)}</span>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+            
+            // 绑定点击事件
+            document.querySelectorAll('.customer-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const id = parseInt(el.dataset.id);
+                    selectCustomer(id);
+                });
+            });
+        }
+        
+        // HTML转义函数
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 获取分类名称
+        function getCategoryName(category) {
+            const names = {
+                'new': '新客户',
+                'lead': '意向客户',
+                'returning': '老客户'
+            };
+            return names[category] || category;
+        }
+        
+        // 选择客户
+        async function selectCustomer(id) {
+            currentCustomer = customers.find(c => c.id === id);
+            if (!currentCustomer) return;
+            
+            renderCustomerList();
+            
+            // 显示聊天界面
+            emptyStateEl.style.display = 'none';
+            chatHeaderEl.style.display = 'flex';
+            messagesContainerEl.style.display = 'block';
+            inputAreaEl.style.display = 'flex';
+            
+            // 更新头部信息
+            document.getElementById('chatCustomerName').textContent = 
+                getCustomerDisplayName(currentCustomer);
+            document.getElementById('chatCustomerPhone').textContent = 
+                currentCustomer.phone;
+            
+            // 启用输入
+            messageInputEl.disabled = false;
+            sendBtnEl.disabled = false;
+            
+            // 加载消息
+            await loadMessages();
+        }
+        
+        // 加载消息
+        async function loadMessages() {
+            if (!currentCustomer) return;
+            
+            try {
+                const res = await fetch(
+                    `${API_BASE}/customers/${currentCustomer.id}/messages`
+                );
+                const messages = await res.json();
+                renderMessages(messages);
+            } catch (e) {
+                console.error('加载消息失败:', e);
+            }
+        }
+        
+        // 渲染消息
+        function renderMessages(messages) {
+            messagesContainerEl.innerHTML = messages.map(m => `
+                <div class="message ${m.direction}">
+                    ${m.direction === 'incoming' ? 
+                        `<div class="message-sender">${m.sender_name}</div>` : ''}
+                    <div class="message-content">${escapeHtml(m.content)}</div>
+                    <div class="message-time">${formatTime(m.created_at)}</div>
+                </div>
+            `).join('');
+            
+            // 滚动到底部
+            messagesContainerEl.scrollTop = messagesContainerEl.scrollHeight;
+        }
+        
+        // 发送消息
+        async function sendMessage() {
+            const content = messageInputEl.value.trim();
+            if (!content || !currentCustomer) return;
+            
+            try {
+                const res = await fetch(
+                    `${API_BASE}/customers/${currentCustomer.id}/messages`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content })
+                    }
+                );
+                
+                if (res.ok) {
+                    messageInputEl.value = '';
+                    await loadMessages();
+                }
+            } catch (e) {
+                console.error('发送消息失败:', e);
+                alert('发送失败，请重试');
+            }
+        }
+        
+        // WebSocket 连接
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = () => {
+                console.log('WebSocket 已连接');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'new_message') {
+                    // 如果是当前客户的消息，刷新消息列表
+                    if (currentCustomer && 
+                        data.data.customer_id === currentCustomer.id) {
+                        loadMessages();
+                    }
+                    // 刷新客户列表
+                    loadCustomers();
+                    
+                    // 播放提示音
+                    playNotificationSound();
+                    
+                    // 浏览器通知
+                    if (Notification.permission === 'granted') {
+                        new Notification('新消息', {
+                            body: `${data.data.customer_name || data.data.customer_phone}: ${data.data.message.substring(0, 50)}`,
+                            icon: '/static/favicon.ico'
+                        });
+                    }
+                    
+                    // 显示页面内通知
+                    showPageNotification(data.data);
+                }
+            };
+            
+            // 播放提示音
+            function playNotificationSound() {
+                try {
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+                    audio.volume = 0.5;
+                    audio.play().catch(e => console.log('播放提示音失败:', e));
+                } catch (e) {
+                    console.log('提示音播放失败:', e);
+                }
+            }
+            
+            // 显示页面内通知
+            function showPageNotification(messageData) {
+                // 创建通知元素
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #075e54;
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    z-index: 10000;
+                    max-width: 300px;
+                    animation: slideIn 0.3s ease;
+                `;
+                notification.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 5px;">
+                        📨 新消息
+                    </div>
+                    <div style="font-size: 14px; opacity: 0.9;">
+                        ${messageData.customer_name || messageData.customer_phone}
+                    </div>
+                    <div style="font-size: 13px; opacity: 0.8; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${messageData.message.substring(0, 50)}${messageData.message.length > 50 ? '...' : ''}
+                    </div>
+                `;
+                
+                // 点击跳转到客户
+                notification.onclick = () => {
+                    selectCustomer(messageData.customer_id);
+                    notification.remove();
+                };
+                
+                document.body.appendChild(notification);
+                
+                // 3秒后自动消失
+                setTimeout(() => {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+            
+            // 添加动画样式
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(400px); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(400px); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            ws.onclose = () => {
+                console.log('WebSocket 断开，5秒后重连...');
+                setTimeout(connectWebSocket, 5000);
+            };
+            
+            // 心跳
+            setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send('ping');
+                }
+            }, 30000);
+        }
+        
+        // 工具函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // 事件绑定
+        sendBtnEl.addEventListener('click', sendMessage);
+        messageInputEl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        
+        categoryFilterEl.addEventListener('change', loadCustomers);
+        
+        // AI回复按钮
+        document.getElementById('aiReplyBtn').addEventListener('click', async () => {
+            if (!currentCustomer) return;
+            
+            try {
+                const res = await fetch(
+                    `${API_BASE}/customers/${currentCustomer.id}/ai-reply`,
+                    { method: 'POST' }
+                );
+                const data = await res.json();
+                
+                if (data.success) {
+                    messageInputEl.value = data.reply;
+                }
+            } catch (e) {
+                console.error('生成AI回复失败:', e);
+            }
+        });
+        
+        // 知识库按钮 - 切换到知识库标签
+        document.getElementById('kbBtn').addEventListener('click', () => {
+            switchTab('knowledge');
+        });
+        
+        // 附件按钮 - 选择文件
+        document.getElementById('attachBtn').addEventListener('click', () => {
+            if (!currentCustomer) {
+                alert('请先选择一个客户');
+                return;
+            }
+            mediaFileInput.click();
+        });
+        
+        // 文件选择变化
+        mediaFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedMediaFile = e.target.files[0];
+                document.getElementById('selectedFileName').textContent = selectedMediaFile.name;
+                openMediaModal();
+            }
+        });
+        
+        // 客户详情按钮
+        document.getElementById('customerDetailBtn').addEventListener('click', () => {
+            if (!currentCustomer) {
+                alert('请先选择一个客户');
+                return;
+            }
+            openCustomerDetail();
+        });
+        
+        // ============ 客户详情功能 ============
+        
+        async function openCustomerDetail() {
+            if (!currentCustomer) return;
+            
+            try {
+                // 加载客户详情
+                const res = await fetch(`${API_BASE}/customers/${currentCustomer.id}/detail`);
+                currentCustomerDetail = await res.json();
+                
+                // 加载可用标签
+                const tagsRes = await fetch(`${API_BASE}/tags`);
+                const tagsData = await tagsRes.json();
+                availableTags = tagsData.tags || [];
+                
+                renderCustomerDetail();
+                document.getElementById('customerDetailModal').style.display = 'flex';
+            } catch (e) {
+                console.error('加载客户详情失败:', e);
+                alert('加载详情失败');
+            }
+        }
+        
+        function renderCustomerDetail() {
+            const detail = currentCustomerDetail;
+            const container = document.getElementById('customerDetailBody');
+            
+            // 获取已选标签ID
+            const selectedTagIds = detail.tags ? detail.tags.map(t => t.id) : [];
+            
+            container.innerHTML = `
+                <div class="detail-section">
+                    <h4>基本信息</h4>
+                    <div class="form-group">
+                        <label>姓名</label>
+                        <input type="text" id="detailName" class="form-control" value="${detail.name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>手机号</label>
+                        <input type="text" class="form-control" value="${detail.phone}" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>分类</label>
+                        <select id="detailCategory" class="form-control">
+                            <option value="new" ${detail.category === 'new' ? 'selected' : ''}>新客户</option>
+                            <option value="lead" ${detail.category === 'lead' ? 'selected' : ''}>意向客户</option>
+                            <option value="returning" ${detail.category === 'returning' ? 'selected' : ''}>老客户</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>标签</h4>
+                    <div class="tag-selector" id="tagSelector">
+                        ${availableTags.map(tag => `
+                            <div class="tag-option ${selectedTagIds.includes(tag.id) ? 'selected' : ''}" 
+                                 data-id="${tag.id}" 
+                                 style="background: ${tag.color}20; color: ${tag.color}; border-color: ${tag.color}"
+                                 onclick="toggleTag(${tag.id})">
+                                ${tag.name}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>消息统计</h4>
+                    <div class="detail-stat">
+                        <span class="detail-stat-label">总消息数</span>
+                        <span class="detail-stat-value">${detail.statistics.total_messages}</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-stat-label">收到消息</span>
+                        <span class="detail-stat-value">${detail.statistics.incoming_messages}</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-stat-label">发送消息</span>
+                        <span class="detail-stat-value">${detail.statistics.outgoing_messages}</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-stat-label">最后联系</span>
+                        <span class="detail-stat-value">${detail.statistics.last_contact ? new Date(detail.statistics.last_contact).toLocaleString() : '无'}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>会话状态</h4>
+                    <div class="detail-stat">
+                        <span class="detail-stat-label">当前状态</span>
+                        <span class="detail-stat-value">${detail.conversation ? detail.conversation.status : '无会话'}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function toggleTag(tagId) {
+            const tagEl = document.querySelector(`#tagSelector .tag-option[data-id="${tagId}"]`);
+            tagEl.classList.toggle('selected');
+        }
+        
+        function closeCustomerDetail() {
+            document.getElementById('customerDetailModal').style.display = 'none';
+            currentCustomerDetail = null;
+        }
+        
+        async function saveCustomerDetail() {
+            if (!currentCustomer || !currentCustomerDetail) return;
+            
+            // 获取选中的标签
+            const selectedTags = [];
+            document.querySelectorAll('#tagSelector .tag-option.selected').forEach(el => {
+                selectedTags.push(parseInt(el.dataset.id));
+            });
+            
+            const updateData = {
+                name: document.getElementById('detailName').value,
+                category: document.getElementById('detailCategory').value,
+                tag_ids: selectedTags
+            };
+            
+            try {
+                const res = await fetch(`${API_BASE}/customers/${currentCustomer.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (res.ok) {
+                    showToast('客户信息已保存');
+                    closeCustomerDetail();
+                    await loadCustomers(); // 刷新列表
+                } else {
+                    alert('保存失败');
+                }
+            } catch (e) {
+                console.error('保存失败:', e);
+                alert('保存失败');
+            }
+        }
+        
+        // ============ 多媒体发送功能 ============
+        
+        function openMediaModal() {
+            document.getElementById('mediaSendModal').style.display = 'flex';
+        }
+        
+        function closeMediaModal() {
+            document.getElementById('mediaSendModal').style.display = 'none';
+            selectedMediaFile = null;
+            mediaFileInput.value = '';
+            document.getElementById('selectedFileName').textContent = '未选择文件';
+            document.getElementById('mediaCaption').value = '';
+        }
+        
+        async function sendMediaFile() {
+            if (!selectedMediaFile || !currentCustomer) return;
+            
+            const mediaType = document.getElementById('mediaTypeSelect').value;
+            const caption = document.getElementById('mediaCaption').value;
+            
+            const formData = new FormData();
+            formData.append('file', selectedMediaFile);
+            formData.append('media_type', mediaType);
+            formData.append('caption', caption);
+            
+            try {
+                const res = await fetch(
+                    `${API_BASE}/customers/${currentCustomer.id}/messages/send-media`,
+                    {
+                        method: 'POST',
+                        body: formData
+                    }
+                );
+                
+                if (res.ok) {
+                    showToast('文件已发送');
+                    closeMediaModal();
+                    await loadMessages();
+                } else {
+                    const error = await res.json();
+                    alert('发送失败: ' + (error.detail || '未知错误'));
+                }
+            } catch (e) {
+                console.error('发送文件失败:', e);
+                alert('发送失败');
+            }
+        }
+        
+        // ============ 状态管理功能 ============
+        
+        function openStatusModal() {
+            document.getElementById('statusModal').style.display = 'flex';
+        }
+        
+        function closeStatusModal() {
+            document.getElementById('statusModal').style.display = 'none';
+        }
+        
+        async function saveStatusSettings() {
+            const status = document.getElementById('statusMessageInput').value;
+            const name = document.getElementById('profileNameInput').value;
+            
+            try {
+                // 保存状态消息
+                if (status) {
+                    await fetch(`${API_BASE}/whatsapp/status`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status })
+                    });
+                }
+                
+                // 保存显示名称
+                if (name) {
+                    await fetch(`${API_BASE}/whatsapp/profile-name`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                }
+                
+                showToast('设置已保存');
+                closeStatusModal();
+            } catch (e) {
+                console.error('保存状态失败:', e);
+                alert('保存失败');
+            }
+        }
+        
+        // 点击模态框外部关闭
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+        
+        // 标签切换
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tabName);
+            });
+            
+            document.getElementById('customerList').style.display = 
+                tabName === 'customers' ? 'block' : 'none';
+            document.getElementById('knowledgeTab').classList.toggle('hidden', tabName !== 'knowledge');
+            document.getElementById('settingsTab').classList.toggle('hidden', tabName !== 'settings');
+            
+            if (tabName === 'knowledge') {
+                loadDocuments();
+            }
+        }
+        
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
+        
+        // 加载知识库文档
+        async function loadDocuments() {
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/documents`);
+                const data = await res.json();
+                
+                const listEl = document.getElementById('documentList');
+                if (data.documents && data.documents.length > 0) {
+                    listEl.innerHTML = data.documents.map(d => `
+                        <div class="document-item" data-id="${d.id}">
+                            <div class="document-title">${escapeHtml(d.title)}</div>
+                            <div class="document-meta">${d.category} · ${new Date(d.created_at).toLocaleDateString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">暂无文档</div>';
+                }
+            } catch (e) {
+                console.error('加载文档失败:', e);
+            }
+        }
+        
+        // 添加文档
+        document.getElementById('addDocBtn').addEventListener('click', () => {
+            const title = prompt('文档标题:');
+            if (!title) return;
+            
+            const content = prompt('文档内容:');
+            if (!content) return;
+            
+            fetch(`${API_BASE}/knowledge/documents`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            }).then(() => loadDocuments());
+        });
+        
+        // 启用浏览器通知
+        document.getElementById('enableNotifyBtn').addEventListener('click', async () => {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                alert('通知已启用');
+            }
+        });
+        
+        // 状态管理按钮
+        document.getElementById('manageStatusBtn').addEventListener('click', () => {
+            openStatusModal();
+        });
+        
+        // 启动
+        init();
+    </script>
+</body>
+</html>

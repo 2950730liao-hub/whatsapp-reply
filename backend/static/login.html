@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp 登录 - 智能客户系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #25d366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        
+        .status-dot.connected {
+            background: #25d366;
+            box-shadow: 0 0 10px #25d366;
+        }
+        
+        .status-dot.disconnected {
+            background: #f44336;
+        }
+        
+        .status-dot.pending {
+            background: #ff9800;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .qr-section {
+            margin: 30px 0;
+        }
+        
+        .qr-container {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 20px;
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .qr-container.has-qr {
+            border: none;
+            background: white;
+        }
+        
+        .qr-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .qr-placeholder {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .qr-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #25d366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #25d366;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #128c7e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            margin-top: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .instructions h3 {
+            font-size: 14px;
+            color: #1976d2;
+            margin-bottom: 8px;
+        }
+        
+        .instructions ol {
+            font-size: 13px;
+            color: #555;
+            padding-left: 18px;
+        }
+        
+        .instructions li {
+            margin: 5px 0;
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .success-message .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .success-message h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .success-message p {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .enter-system-btn {
+            margin-top: 20px;
+            background: #2196f3;
+            color: white;
+        }
+        
+        .enter-system-btn:hover {
+            background: #1976d2;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">💬</div>
+        <h1>WhatsApp 智能客户系统</h1>
+        <p class="subtitle">扫码登录，开始管理您的客户</p>
+        
+        <!-- 状态显示 -->
+        <div class="status-card">
+            <div class="status-item">
+                <span class="status-dot" id="cliStatusDot"></span>
+                <span id="cliStatusText">检查 WhatsApp CLI...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-dot" id="authStatusDot"></span>
+                <span id="authStatusText">检查登录状态...</span>
+            </div>
+        </div>
+        
+        <!-- 错误提示 -->
+        <div class="error-message" id="errorMessage"></div>
+        
+        <!-- 未登录状态 -->
+        <div id="loginSection">
+            <!-- QR 码显示区域 -->
+            <div class="qr-section" id="qrSection" style="display: none;">
+                <div class="qr-container" id="qrContainer">
+                    <div class="qr-loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                <p style="font-size: 13px; color: #666; margin-top: 10px;">
+                    请使用 WhatsApp 扫描上方 QR 码
+                </p>
+            </div>
+            
+            <div class="instructions" style="background: #e8f5e9; border-left-color: #4caf50;">
+                <h3 style="color: #2e7d32;">📱 登录步骤</h3>
+                <ol>
+                    <li>点击"获取 QR 码"按钮</li>
+                    <li>等待 QR 码显示在上方</li>
+                    <li>打开手机 WhatsApp</li>
+                    <li>设置 → 关联设备 → 关联新设备</li>
+                    <li>扫描上方的 QR 码</li>
+                    <li>等待登录完成</li>
+                </ol>
+            </div>
+            
+            <button class="btn btn-primary" id="getQrBtn" onclick="startLogin()">
+                <span>📷 获取 QR 码</span>
+            </button>
+            
+            <button class="btn btn-secondary" id="checkStatusBtn" onclick="checkStatus()">
+                <span>🔄 刷新状态</span>
+            </button>
+        </div>
+        
+        <!-- 已登录状态 -->
+        <div id="loggedInSection" style="display: none;">
+            <div class="success-message">
+                <div class="icon">✅</div>
+                <h2>登录成功！</h2>
+                <p>WhatsApp 已成功连接，可以开始使用系统了。</p>
+                <button class="btn enter-system-btn" onclick="enterSystem()">
+                    进入系统 →
+                </button>
+                <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px; background: #f44336;">
+                    🚪 退出登录
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            小芃科技 © 2024 WhatsApp 智能客户系统
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        let loginCheckInterval = null;
+        
+        // 页面加载时检查状态
+        window.onload = function() {
+            checkStatus();
+        };
+        
+        // 检查状态
+        async function checkStatus() {
+            try {
+                // 使用 auth/status 获取详细状态（包括后端类型）
+                const res = await fetch(`${API_BASE}/auth/status`);
+                const data = await res.json();
+                
+                // 检测后端类型
+                const isNeonize = data.backend === 'neonize';
+                
+                // 更新 CLI 状态
+                const cliDot = document.getElementById('cliStatusDot');
+                const cliText = document.getElementById('cliStatusText');
+                cliDot.className = 'status-dot connected';
+                cliText.textContent = isNeonize ? 'Neonize 后端正常' : 'WhatsApp CLI 正常';
+                
+                // 更新登录状态
+                const authDot = document.getElementById('authStatusDot');
+                const authText = document.getElementById('authStatusText');
+                
+                if (data.whatsapp_connected || data.logged_in) {
+                    authDot.className = 'status-dot connected';
+                    authText.textContent = '已登录';
+                    showLoggedIn();
+                } else {
+                    authDot.className = 'status-dot disconnected';
+                    authText.textContent = '未登录';
+                    showLogin();
+                    
+                    // Neonize 后端特殊处理 - 显示二维码
+                    if (isNeonize) {
+                        if (data.qr_code) {
+                            showNeonizeQRCode(data.qr_code);
+                        } else if (data.message) {
+                            showNeonizeQRMessage(data.message);
+                        }
+                    }
+                }
+                
+                hideError();
+                
+            } catch (e) {
+                showError('无法连接到服务器，请确保后端服务已启动');
+                
+                const cliDot = document.getElementById('cliStatusDot');
+                const cliText = document.getElementById('cliStatusText');
+                cliDot.className = 'status-dot disconnected';
+                cliText.textContent = '服务器未连接';
+            }
+        }
+        
+        // 显示 Neonize QR 码提示
+        function showNeonizeQRMessage(message) {
+            const qrSection = document.getElementById('qrSection');
+            const container = document.getElementById('qrContainer');
+            const btn = document.getElementById('getQrBtn');
+            
+            qrSection.style.display = 'block';
+            container.innerHTML = `
+                <div style="padding: 20px; text-align: center; color: #666;">
+                    <div class="spinner" style="width: 40px; height: 40px; margin: 0 auto 10px;"></div>
+                    <p style="font-size: 14px; margin-bottom: 10px;">${message}</p>
+                    <p style="font-size: 12px; color: #999;">等待二维码生成...</p>
+                </div>
+            `;
+            btn.style.display = 'none';
+        }
+        
+        // 显示 Neonize QR 码图片
+        function showNeonizeQRCode(qrCodeData) {
+            const qrSection = document.getElementById('qrSection');
+            const container = document.getElementById('qrContainer');
+            const btn = document.getElementById('getQrBtn');
+            
+            qrSection.style.display = 'block';
+            container.className = 'qr-container has-qr';
+            
+            // 生成二维码图片（使用 QR Server API）
+            const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrCodeData)}`;
+            
+            container.innerHTML = `
+                <img src="${qrImageUrl}" alt="WhatsApp QR Code" style="max-width: 100%; max-height: 100%;">
+                <p style="margin-top: 10px; font-size: 12px; color: #666;">二维码有效期约 20 秒，请尽快扫描</p>
+                <button onclick="refreshQRCode()" style="margin-top: 10px; padding: 8px 16px; background: #075e54; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    🔄 刷新二维码
+                </button>
+            `;
+            btn.style.display = 'none';
+            
+            // 开始轮询检查登录状态
+            startLoginCheck();
+        }
+        
+        // 刷新二维码
+        async function refreshQRCode() {
+            const container = document.getElementById('qrContainer');
+            container.innerHTML = '<div class="qr-loading"><div class="spinner"></div><p>正在获取新二维码...</p></div>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/auth/refresh-qr`, { method: 'POST' });
+                const data = await res.json();
+                
+                if (data.qr_code) {
+                    showNeonizeQRCode(data.qr_code);
+                } else {
+                    alert('获取新二维码失败，请刷新页面重试');
+                }
+            } catch (e) {
+                alert('刷新失败，请刷新页面');
+            }
+        }
+        
+        // 开始登录流程
+        async function startLogin() {
+            const btn = document.getElementById('getQrBtn');
+            const qrSection = document.getElementById('qrSection');
+            const container = document.getElementById('qrContainer');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px; display: inline-block; vertical-align: middle; margin-right: 8px;"></div><span>获取中...</span>';
+            
+            // 显示 QR 码区域
+            qrSection.style.display = 'block';
+            container.innerHTML = '<div class="qr-loading"><div class="spinner"></div></div>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/auth/qr`, {
+                    method: 'POST'
+                });
+                
+                const data = await res.json();
+                
+                if (data.success && data.qr_image) {
+                    // 显示 QR 码
+                    container.className = 'qr-container has-qr';
+                    container.innerHTML = `<img src="${data.qr_image}" alt="QR Code" style="max-width: 100%; max-height: 100%;">`;
+                    
+                    // 开始轮询检查登录状态
+                    startLoginCheck();
+                    
+                    btn.innerHTML = '<span>等待扫描...</span>';
+                } else if (data.status === 'pending') {
+                    // 还在等待 QR 码
+                    container.innerHTML = '<div class="qr-loading"><div class="spinner"></div><p style="margin-top: 10px; font-size: 12px;">正在获取 QR 码...</p></div>';
+                    
+                    // 继续轮询获取 QR 码
+                    pollForQR();
+                } else {
+                    throw new Error(data.message || '获取 QR 码失败');
+                }
+                
+            } catch (e) {
+                showError(e.message || '获取 QR 码失败，请重试');
+                btn.disabled = false;
+                btn.innerHTML = '<span>📷 重新获取 QR 码</span>';
+                qrSection.style.display = 'none';
+            }
+        }
+        
+        // 轮询获取 QR 码
+        async function pollForQR() {
+            const container = document.getElementById('qrContainer');
+            const btn = document.getElementById('getQrBtn');
+            
+            for (let i = 0; i < 60; i++) {  // 最多轮询 60 次（60 秒）
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                try {
+                    // 获取 QR 码状态
+                    const res = await fetch(`${API_BASE}/auth/qr/status`);
+                    const data = await res.json();
+                    
+                    console.log('QR 状态:', data);
+                    
+                    // 如果已经有 QR 码图片，显示它
+                    if (data.qr_image) {
+                        container.className = 'qr-container has-qr';
+                        container.innerHTML = `<img src="${data.qr_image}" alt="QR Code" style="max-width: 100%; max-height: 100%;">`;
+                        startLoginCheck();
+                        btn.innerHTML = '<span>等待扫描...</span>';
+                        return;
+                    }
+                    
+                    // 如果登录进程已结束但没有 QR 码
+                    if (!data.is_running && !data.has_qr) {
+                        checkStatus();
+                        return;
+                    }
+                    
+                } catch (e) {
+                    console.error('轮询 QR 码失败:', e);
+                }
+            }
+            
+            // 超时
+            showError('获取 QR 码超时，请重试');
+            btn.disabled = false;
+            btn.innerHTML = '<span>📷 重新获取 QR 码</span>';
+        }
+        
+        // 开始轮询检查登录状态
+        function startLoginCheck() {
+            if (loginCheckInterval) {
+                clearInterval(loginCheckInterval);
+            }
+            
+            loginCheckInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/status`);
+                    const data = await res.json();
+                    
+                    if (data.whatsapp_connected) {
+                        clearInterval(loginCheckInterval);
+                        showLoggedIn();
+                    }
+                } catch (e) {
+                    console.error('检查登录状态失败:', e);
+                }
+            }, 3000); // 每 3 秒检查一次
+        }
+        
+        // 显示登录界面
+        function showLogin() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('loggedInSection').style.display = 'none';
+        }
+        
+        // 显示已登录界面
+        function showLoggedIn() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('loggedInSection').style.display = 'block';
+            
+            // 停止轮询
+            if (loginCheckInterval) {
+                clearInterval(loginCheckInterval);
+            }
+        }
+        
+        // 进入系统
+        function enterSystem() {
+            window.location.href = '/static/index.html';
+        }
+        
+        // 退出登录
+        async function logout() {
+            if (!confirm('确定要退出 WhatsApp 登录吗？')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/auth/logout`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('退出登录成功！');
+                    checkStatus(); // 刷新状态
+                } else {
+                    alert('退出登录失败：' + (data.message || '未知错误'));
+                }
+            } catch (e) {
+                alert('退出登录失败，请检查网络连接');
+                console.error('Logout error:', e);
+            }
+        }
+        
+        // 显示错误
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.classList.add('show');
+        }
+        
+        // 隐藏错误
+        function hideError() {
+            const el = document.getElementById('errorMessage');
+            el.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

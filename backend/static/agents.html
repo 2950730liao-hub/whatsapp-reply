@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能体管理 - WhatsApp智能客户系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #075e54;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+        }
+        
+        .header .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            opacity: 0.9;
+        }
+        
+        .header .nav-links a:hover {
+            opacity: 1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #075e54;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #054d44;
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+        
+        /* 智能体列表 */
+        .agent-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .agent-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .agent-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .agent-card.default {
+            border-color: #075e54;
+            background: #f0f9f7;
+        }
+        
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+        
+        .agent-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .agent-badges {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .badge {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .badge-default {
+            background: #075e54;
+            color: white;
+        }
+        
+        .badge-active {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .badge-inactive {
+            background: #9e9e9e;
+            color: white;
+        }
+        
+        .agent-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .agent-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .agent-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* 标签列表 */
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .tag-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .tag-item .tag-name {
+            font-weight: 500;
+        }
+        
+        .tag-item .tag-actions {
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .tag-item:hover .tag-actions {
+            opacity: 1;
+        }
+        
+        .tag-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #075e54;
+        }
+        
+        .form-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI智能体管理</h1>
+        <div class="nav-links">
+            <a href="/">返回首页</a>
+            <a href="/static/admin.html">管理后台</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- 智能体列表 -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">AI智能体</h2>
+                <button class="btn btn-primary" onclick="openAgentModal()">+ 新建智能体</button>
+            </div>
+            <div id="agentList" class="agent-list">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+        
+        <!-- 客户标签 -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">客户标签</h2>
+                <button class="btn btn-primary" onclick="openTagModal()">+ 新建标签</button>
+            </div>
+            <div id="tagList" class="tag-list">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 智能体模态框 -->
+    <div id="agentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="agentModalTitle">新建智能体</h3>
+                <button class="modal-close" onclick="closeAgentModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="agentForm">
+                    <input type="hidden" id="agentId">
+                    <div class="form-group">
+                        <label class="form-label">智能体名称 *</label>
+                        <input type="text" class="form-input" id="agentName" required placeholder="例如：销售助手">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">描述</label>
+                        <input type="text" class="form-input" id="agentDescription" placeholder="简短描述这个智能体的用途">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">系统提示词 *</label>
+                        <textarea class="form-textarea" id="agentPrompt" required placeholder="你是小芃科技的智能客服助手..."></textarea>
+                        <div class="form-hint">定义AI的角色、语气和回复风格</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">模型</label>
+                            <select class="form-select" id="agentModel">
+                                <option value="deepseek-chat">DeepSeek Chat</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="gpt-4">GPT-4</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">温度 (0-1)</label>
+                            <input type="number" class="form-input" id="agentTemperature" min="0" max="1" step="0.1" value="0.7">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">最大Token数</label>
+                            <input type="number" class="form-input" id="agentMaxTokens" min="100" max="2000" value="500">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">优先级</label>
+                            <input type="number" class="form-input" id="agentPriority" min="0" value="0">
+                            <div class="form-hint">数字越大优先级越高</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">适用客户标签</label>
+                        <div id="agentTagCheckboxes" class="checkbox-group">
+                            <!-- 动态加载 -->
+                        </div>
+                        <div class="form-hint">选择适用此智能体的客户标签（可多选）</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">挂载知识库</label>
+                        <div id="agentKnowledgeCheckboxes" class="checkbox-group">
+                            <span style="color: #999;">加载中...</span>
+                        </div>
+                        <div class="form-hint">选择此智能体可使用的知识库（可多选），AI回复时优先使用挂载知识库</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="agentIsDefault">
+                            <span>设为默认智能体</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAgentModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveAgent()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 标签模态框 -->
+    <div id="tagModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="tagModalTitle">新建标签</h3>
+                <button class="modal-close" onclick="closeTagModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="tagForm">
+                    <input type="hidden" id="tagId">
+                    <div class="form-group">
+                        <label class="form-label">标签名称 *</label>
+                        <input type="text" class="form-input" id="tagName" required placeholder="例如：VIP客户">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">颜色</label>
+                        <input type="color" class="form-input" id="tagColor" value="#007bff">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">描述</label>
+                        <input type="text" class="form-input" id="tagDescription" placeholder="标签说明（可选）">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTagModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTag()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/api';
+        let agents = [];
+        let tags = [];
+        let knowledgeDocs = [];
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAgents();
+            loadTags();
+            loadKnowledgeDocs();
+        });
+        
+        // 加载知识库文档列表
+        async function loadKnowledgeDocs() {
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/documents`);
+                const data = await res.json();
+                knowledgeDocs = data.documents || [];
+                renderKnowledgeCheckboxes();
+            } catch (e) {
+                console.error('加载知识库失败:', e);
+            }
+        }
+        
+        // 加载智能体列表
+        async function loadAgents() {
+            try {
+                const res = await fetch(`${API_BASE}/agents`);
+                const data = await res.json();
+                agents = data.agents || [];
+                renderAgents();
+            } catch (e) {
+                console.error('加载智能体失败:', e);
+                document.getElementById('agentList').innerHTML = '<div class="empty-state">加载失败</div>';
+            }
+        }
+        
+        // 渲染智能体列表
+        function renderAgents() {
+            const container = document.getElementById('agentList');
+            if (agents.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无智能体，点击上方按钮创建</div>';
+                return;
+            }
+            
+            container.innerHTML = agents.map(agent => `
+                <div class="agent-card ${agent.is_default ? 'default' : ''}">
+                    <div class="agent-header">
+                        <div class="agent-name">${escapeHtml(agent.name)}</div>
+                        <div class="agent-badges">
+                            ${agent.is_default ? '<span class="badge badge-default">默认</span>' : ''}
+                            ${agent.is_active ? '<span class="badge badge-active">启用</span>' : '<span class="badge badge-inactive">禁用</span>'}
+                        </div>
+                    </div>
+                    <div class="agent-description">${escapeHtml(agent.description || '暂无描述')}</div>
+                    <div class="agent-tags">
+                        ${agent.tags.map(tag => `<span class="tag" style="background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;">${escapeHtml(tag.name)}</span>`).join('')}
+                        ${agent.tags.length === 0 ? '<span style="color: #999; font-size: 12px;">未绑定标签</span>' : ''}
+                    </div>
+                    ${(agent.knowledge_docs && agent.knowledge_docs.length > 0) ? `
+                    <div class="agent-tags" style="margin-top:4px;">
+                        <span style="color:#666;font-size:12px;margin-right:4px">📚 知识库:</span>
+                        ${agent.knowledge_docs.map(doc => `<span class="tag" style="background:#f0f7ff;color:#1a73e8;border:1px solid #c5deff">${escapeHtml(doc.title)}</span>`).join('')}
+                    </div>` : ''}
+                    <div class="agent-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="editAgent(${agent.id})">编辑</button>
+                        ${!agent.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultAgent(${agent.id})">设为默认</button>` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="deleteAgent(${agent.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 加载标签列表
+        async function loadTags() {
+            try {
+                const res = await fetch(`${API_BASE}/customer-tags`);
+                const data = await res.json();
+                tags = data.tags || [];
+                renderTags();
+                renderTagCheckboxes();
+            } catch (e) {
+                console.error('加载标签失败:', e);
+                document.getElementById('tagList').innerHTML = '<div class="empty-state">加载失败</div>';
+            }
+        }
+        
+        // 渲染标签列表
+        function renderTags() {
+            const container = document.getElementById('tagList');
+            if (tags.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无标签，点击上方按钮创建</div>';
+                return;
+            }
+            
+            container.innerHTML = tags.map(tag => `
+                <div class="tag-item" style="background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;">
+                    <span class="tag-name">${escapeHtml(tag.name)}</span>
+                    <div class="tag-actions">
+                        <button class="tag-btn" style="background: ${tag.color}; color: white;" onclick="editTag(${tag.id})">✎</button>
+                        <button class="tag-btn" style="background: #f44336; color: white;" onclick="deleteTag(${tag.id})">✕</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 渲染标签选择框
+        function renderTagCheckboxes() {
+            const container = document.getElementById('agentTagCheckboxes');
+            if (tags.length === 0) {
+                container.innerHTML = '<span style="color: #999;">请先创建标签</span>';
+                return;
+            }
+            
+            container.innerHTML = tags.map(tag => `
+                <label class="checkbox-item">
+                    <input type="checkbox" name="agentTags" value="${tag.id}">
+                    <span style="color: ${tag.color};">${escapeHtml(tag.name)}</span>
+                </label>
+            `).join('');
+        }
+        
+        // 渲染知识库选择框
+        function renderKnowledgeCheckboxes() {
+            const container = document.getElementById('agentKnowledgeCheckboxes');
+            if (!container) return;
+            if (knowledgeDocs.length === 0) {
+                container.innerHTML = '<span style="color: #999;">暂无知识库文档，请先到知识库页面上传</span>';
+                return;
+            }
+            container.innerHTML = knowledgeDocs.map(doc => `
+                <label class="checkbox-item">
+                    <input type="checkbox" name="agentKnowledge" value="${doc.id}">
+                    <span>📚 ${escapeHtml(doc.title)}</span>
+                </label>
+            `).join('');
+        }
+        
+        // 智能体模态框
+        function openAgentModal(agentId = null) {
+            document.getElementById('agentModalTitle').textContent = agentId ? '编辑智能体' : '新建智能体';
+            document.getElementById('agentForm').reset();
+            document.getElementById('agentId').value = '';
+            
+            if (agentId) {
+                const agent = agents.find(a => a.id === agentId);
+                if (agent) {
+                    document.getElementById('agentId').value = agent.id;
+                    document.getElementById('agentName').value = agent.name;
+                    document.getElementById('agentDescription').value = agent.description || '';
+                    document.getElementById('agentPrompt').value = agent.system_prompt;
+                    document.getElementById('agentModel').value = agent.model;
+                    document.getElementById('agentTemperature').value = agent.temperature;
+                    document.getElementById('agentMaxTokens').value = agent.max_tokens;
+                    document.getElementById('agentPriority').value = agent.priority;
+                    document.getElementById('agentIsDefault').checked = agent.is_default;
+                    
+                    // 设置标签选择
+                    const tagIds = agent.tags.map(t => t.id);
+                    document.querySelectorAll('input[name="agentTags"]').forEach(cb => {
+                        cb.checked = tagIds.includes(parseInt(cb.value));
+                    });
+                    
+                    // 设置知识库选择
+                    const kbIds = (agent.knowledge_doc_ids || []);
+                    document.querySelectorAll('input[name="agentKnowledge"]').forEach(cb => {
+                        cb.checked = kbIds.includes(parseInt(cb.value));
+                    });
+                }
+            }
+            
+            document.getElementById('agentModal').classList.add('active');
+        }
+        
+        function closeAgentModal() {
+            document.getElementById('agentModal').classList.remove('active');
+        }
+        
+        // 保存智能体
+        async function saveAgent() {
+            const agentId = document.getElementById('agentId').value;
+            const tagCheckboxes = document.querySelectorAll('input[name="agentTags"]:checked');
+            const kbCheckboxes = document.querySelectorAll('input[name="agentKnowledge"]:checked');
+            
+            const data = {
+                name: document.getElementById('agentName').value,
+                description: document.getElementById('agentDescription').value,
+                system_prompt: document.getElementById('agentPrompt').value,
+                model: document.getElementById('agentModel').value,
+                temperature: parseFloat(document.getElementById('agentTemperature').value),
+                max_tokens: parseInt(document.getElementById('agentMaxTokens').value),
+                priority: parseInt(document.getElementById('agentPriority').value),
+                is_default: document.getElementById('agentIsDefault').checked,
+                tag_ids: Array.from(tagCheckboxes).map(cb => parseInt(cb.value)),
+                knowledge_doc_ids: Array.from(kbCheckboxes).map(cb => parseInt(cb.value))
+            };
+            
+            try {
+                const url = agentId ? `${API_BASE}/agents/${agentId}` : `${API_BASE}/agents`;
+                const method = agentId ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    closeAgentModal();
+                    loadAgents();
+                    alert('保存成功');
+                } else {
+                    const err = await res.json();
+                    alert('保存失败: ' + (err.detail || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+        
+        // 编辑智能体
+        function editAgent(agentId) {
+            openAgentModal(agentId);
+        }
+        
+        // 设置默认智能体
+        async function setDefaultAgent(agentId) {
+            try {
+                const res = await fetch(`${API_BASE}/agents/${agentId}/set-default`, { method: 'POST' });
+                if (res.ok) {
+                    loadAgents();
+                    alert('已设置为默认智能体');
+                }
+            } catch (e) {
+                alert('设置失败: ' + e.message);
+            }
+        }
+        
+        // 删除智能体
+        async function deleteAgent(agentId) {
+            if (!confirm('确定要删除这个智能体吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/agents/${agentId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadAgents();
+                    alert('删除成功');
+                }
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+        
+        // 标签模态框
+        function openTagModal(tagId = null) {
+            document.getElementById('tagModalTitle').textContent = tagId ? '编辑标签' : '新建标签';
+            document.getElementById('tagForm').reset();
+            document.getElementById('tagId').value = '';
+            
+            if (tagId) {
+                const tag = tags.find(t => t.id === tagId);
+                if (tag) {
+                    document.getElementById('tagId').value = tag.id;
+                    document.getElementById('tagName').value = tag.name;
+                    document.getElementById('tagColor').value = tag.color;
+                    document.getElementById('tagDescription').value = tag.description || '';
+                }
+            }
+            
+            document.getElementById('tagModal').classList.add('active');
+        }
+        
+        function closeTagModal() {
+            document.getElementById('tagModal').classList.remove('active');
+        }
+        
+        // 保存标签
+        async function saveTag() {
+            const tagId = document.getElementById('tagId').value;
+            
+            const data = {
+                name: document.getElementById('tagName').value,
+                color: document.getElementById('tagColor').value,
+                description: document.getElementById('tagDescription').value
+            };
+            
+            try {
+                const url = tagId ? `${API_BASE}/customer-tags/${tagId}` : `${API_BASE}/customer-tags`;
+                const method = tagId ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    closeTagModal();
+                    loadTags();
+                    alert('保存成功');
+                } else {
+                    const err = await res.json();
+                    alert('保存失败: ' + (err.detail || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+        
+        // 编辑标签
+        function editTag(tagId) {
+            openTagModal(tagId);
+        }
+        
+        // 删除标签
+        async function deleteTag(tagId) {
+            if (!confirm('确定要删除这个标签吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/customer-tags/${tagId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadTags();
+                    alert('删除成功');
+                }
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+        
+        // 工具函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 点击模态框外部关闭
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,3557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统管理 - WhatsApp CRM</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #075e54;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+        }
+        
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #075e54;
+            color: #075e54;
+        }
+        
+        /* API配置样式 */
+        .config-form {
+            max-width: 600px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #075e54;
+        }
+        
+        .api-key-input {
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+        
+        .api-key-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .api-key-status.set {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .api-key-status.not-set {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #075e54;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #128c7e;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        
+        /* 知识库样式 */
+        .doc-list {
+            margin-top: 20px;
+        }
+        
+        .doc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+        
+        .doc-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .doc-info h4 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .doc-info span {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .doc-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            font-size: 18px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .message.show {
+            display: block;
+        }
+        
+        .message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            color: #666;
+        }
+        
+        .tab.active {
+            color: #075e54;
+            border-bottom-color: #075e54;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 发送计划样式 */
+        .schedule-list {
+            margin-top: 20px;
+        }
+        
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+        
+        .schedule-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .schedule-info h4 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .schedule-meta {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .schedule-meta span {
+            margin-right: 15px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .status-badge.pending {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .status-badge.running {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .status-badge.completed {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-badge.paused {
+            background: #f5f5f5;
+            color: #616161;
+        }
+        
+        .schedule-progress {
+            font-size: 13px;
+            color: #333;
+            margin-top: 4px;
+        }
+        
+        .schedule-actions {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 系统管理</h1>
+        <a href="/static/index.html">← 返回聊天</a>
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="llm">大模型配置</div>
+            <div class="tab" data-tab="agents">AI智能体</div>
+            <div class="tab" data-tab="tags">客户标签</div>
+            <div class="tab" data-tab="contacts">联系人导入</div>
+            <div class="tab" data-tab="knowledge">知识库</div>
+            <div class="tab" data-tab="scheduler">发送计划</div>
+            <div class="tab" data-tab="notify">🔔 通知设置</div>
+        </div>
+        
+        <!-- 大模型配置 -->
+        <div class="tab-content active" id="llmTab">
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">大模型提供商管理</h2>
+                    <button class="btn btn-primary" onclick="openProviderModal()">+ 添加提供商</button>
+                </div>
+                
+                <div class="message" id="providerMessage"></div>
+                
+                <div id="providerList" style="margin-top: 20px;">
+                    <div class="empty-state">暂无大模型提供商配置</div>
+                </div>
+            </div>
+            
+
+        </div>
+        
+        <!-- AI智能体 -->
+        <div class="tab-content" id="agentsTab">
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">AI智能体管理</h2>
+                    <button class="btn btn-primary" onclick="openAgentModal()">+ 新建智能体</button>
+                </div>
+                
+                <div class="message" id="agentMessage"></div>
+                
+                <div id="agentList" style="margin-top: 20px;">
+                    <div class="empty-state">暂无智能体</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 客户标签 -->
+        <div class="tab-content" id="tagsTab">
+            <!-- 标签管理 -->
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">客户标签管理</h2>
+                    <button class="btn btn-primary" onclick="openTagModal()">+ 新建标签</button>
+                </div>
+                
+                <div class="message" id="tagMessage"></div>
+                
+                <div id="tagList" style="margin-top: 20px;">
+                    <div class="empty-state">暂无标签</div>
+                </div>
+            </div>
+            
+            <!-- 自动打标签规则 -->
+            <div class="section" style="margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">自动打标签规则</h2>
+                    <button class="btn btn-primary" onclick="openAutoTagRuleModal()">+ 新建规则</button>
+                </div>
+                
+                <div class="message" id="autoTagRuleMessage"></div>
+                
+                <div id="autoTagRuleList" style="margin-top: 20px;">
+                    <div class="empty-state">暂无自动打标签规则</div>
+                </div>
+            </div>
+            
+            <!-- 批量打标签 -->
+            <div class="section" style="margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">批量打标签</h2>
+                </div>
+                
+                <div class="message" id="batchTagMessage"></div>
+                
+                <div style="background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+                    <!-- Step 1: 选标签 -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #333;">
+                            <span style="display: inline-block; width: 22px; height: 22px; background: #075e54; color: white; border-radius: 50%; text-align: center; line-height: 22px; font-size: 12px; margin-right: 6px;">1</span>
+                            选择要添加的标签
+                        </label>
+                        <select id="batchTagId" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: white; cursor: pointer;">
+                            <option value="">请选择标签...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Step 2: 选客户 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label style="font-weight: 600; font-size: 14px; color: #333;">
+                                <span style="display: inline-block; width: 22px; height: 22px; background: #075e54; color: white; border-radius: 50%; text-align: center; line-height: 22px; font-size: 12px; margin-right: 6px;">2</span>
+                                选择要打标签的客户
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: #075e54; font-weight: 500; padding: 4px 10px; border: 1px solid #075e54; border-radius: 4px; background: white;">
+                                <input type="checkbox" id="selectAllCustomers" onchange="toggleSelectAllCustomers()" style="cursor: pointer;">
+                                全选 / 取消全选
+                            </label>
+                        </div>
+                        <!-- 客户搜索框 -->
+                        <div style="position: relative; margin-bottom: 8px;">
+                            <input type="text" id="batchCustomerSearch" placeholder="搜索客户姓名或手机号..." oninput="filterBatchCustomers()" style="width: 100%; padding: 8px 12px 8px 34px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none;" onfocus="this.style.borderColor='#075e54'" onblur="this.style.borderColor='#ddd'">
+                            <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 15px;">&#128269;</span>
+                        </div>
+                        <div id="batchCustomerList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; background: white;">
+                            <div class="empty-state">加载客户列表...</div>
+                        </div>
+                        <div style="margin-top: 6px; font-size: 12px; color: #999;">已勾选 <span id="selectedCustomerCount">0</span> 个客户（显示 <span id="filteredCustomerCount">0</span> / 共 <span id="totalCustomerCount">0</span> 个）</div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="applyBatchTags()" style="width: 100%; padding: 12px; font-size: 15px;">为选中客户添加标签</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 知识库 -->
+        <div class="tab-content" id="knowledgeTab">
+            <div class="section">
+                <h2>知识库管理</h2>
+                
+                <div class="message" id="kbMessage"></div>
+                
+                <button class="btn btn-primary" id="addDocBtn">+ 添加文档</button>
+                
+                <div class="doc-list" id="docList">
+                    <div class="empty-state">暂无文档</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 发送计划 -->
+        <div class="tab-content" id="schedulerTab">
+            <div class="section">
+                <h2>定时发送计划</h2>
+                
+                <div class="message" id="scheduleMessage"></div>
+                
+                <button class="btn btn-primary" id="addScheduleBtn">+ 创建计划</button>
+                
+                <div class="schedule-list" id="scheduleList" style="margin-top: 20px;">
+                    <div class="empty-state">暂无计划</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 联系人导入 -->
+        <div class="tab-content" id="contactsTab">
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">批量导入联系人</h2>
+                    <a href="/api/customers/import-template" download="import_template.csv" style="font-size: 13px; color: #075e54; text-decoration: none; padding: 6px 14px; border: 1px solid #075e54; border-radius: 4px;">⬇️ 下载 CSV 模板</a>
+                </div>
+
+                <div class="message" id="importMessage"></div>
+
+                <!-- 导入方式 Tab -->
+                <div style="display: flex; gap: 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;">
+                    <button id="importTabCSV" onclick="switchImportTab('csv')" style="flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #075e54; border-bottom: 2px solid #075e54; margin-bottom: -2px;">📄 CSV 文件上传</button>
+                    <button id="importTabManual" onclick="switchImportTab('manual')" style="flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #999; border-bottom: 2px solid transparent; margin-bottom: -2px;">✏️ 手动输入</button>
+                </div>
+
+                <!-- CSV 上传区 -->
+                <div id="importPanelCSV">
+                    <div id="csvDropZone" onclick="document.getElementById('csvFileInput').click()" ondragover="event.preventDefault(); this.style.borderColor='#075e54'" ondragleave="this.style.borderColor='#ddd'" ondrop="handleCSVDrop(event)" style="border: 2px dashed #ddd; border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 16px;">
+                        <div style="font-size: 36px; margin-bottom: 10px;">📄</div>
+                        <div style="font-size: 15px; color: #555; margin-bottom: 6px;">点击或拖拽上传 CSV 文件</div>
+                        <div style="font-size: 12px; color: #aaa;">支持 .csv 文件，列附：手机号、姓名、备注</div>
+                        <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVFile(this.files[0])">
+                    </div>
+                    <div id="csvParseInfo" style="display:none; font-size: 13px; color: #555; margin-bottom: 12px;"></div>
+                </div>
+
+                <!-- 手动输入区 -->
+                <div id="importPanelManual" style="display:none;">
+                    <div style="font-size: 13px; color: #777; margin-bottom: 8px;">每行一个联系人，格式：<code style="background:#f5f5f5; padding: 2px 6px; border-radius: 3px;">手机号,姓名,备注</code>（姓名和备注可留空）</div>
+                    <textarea id="manualInput" placeholder="8613800138000,张三,VIP客户
+8618612345678,李四
+8615900001234" oninput="parseManualInput()" style="width: 100%; height: 180px; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: monospace; box-sizing: border-box; resize: vertical;"></textarea>
+                    <div id="manualParseInfo" style="font-size: 13px; color: #555; margin-top: 8px;"></div>
+                </div>
+
+                <!-- 预览列表 -->
+                <div id="importPreviewArea" style="display:none; margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #333;">预览：<span id="previewCount">0</span> 条有效记录</div>
+                    </div>
+                    <div style="max-height: 220px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f5f5f5;">
+                                    <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #555;">手机号</th>
+                                    <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #555;">姓名</th>
+                                    <th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #555;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody id="importPreviewBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 导入设置 -->
+                <div style="margin-top: 20px; padding: 16px; background: #f9f9f9; border-radius: 8px; border: 1px solid #e0e0e0;">
+                    <div style="font-weight: 600; font-size: 14px; color: #333; margin-bottom: 14px;">⚙️ 导入设置</div>
+                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 13px; color: #555; margin-bottom: 6px;">重复手机号处理方式</label>
+                            <select id="duplicateStrategy" style="width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+                                <option value="skip">跳过（保留原有客户）</option>
+                                <option value="update">更新（覆盖姓名 + 追加标签）</option>
+                            </select>
+                        </div>
+                        <div style="flex: 2; min-width: 240px;">
+                            <label style="display: block; font-size: 13px; color: #555; margin-bottom: 6px;">分配标签（可多选）</label>
+                            <div id="importTagSelector" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                                <span style="color: #aaa; font-size: 13px; line-height: 24px;">加载标签中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导入按钮 -->
+                <button id="doImportBtn" onclick="doImport()" class="btn btn-primary" style="width: 100%; margin-top: 20px; padding: 13px; font-size: 15px;" disabled>导入联系人</button>
+
+                <!-- 导入结果 -->
+                <div id="importResult" style="display:none; margin-top: 20px; padding: 16px; border-radius: 8px; background: #e8f5e9; border: 1px solid #a5d6a7;"></div>
+            </div>
+        </div>
+
+        <!-- 通知设置 -->
+        <div class="tab-content" id="notifyTab">
+
+            <!-- 管理员手机 -->
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">👤 管理员手机号</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="testNotify()" style="font-size: 13px; padding: 8px 14px;">🔔 发送测试</button>
+                        <button class="btn btn-primary" onclick="openAddAdminModal()">＋ 添加管理员</button>
+                    </div>
+                </div>
+                <div class="message" id="notifyAdminMsg"></div>
+                <div id="adminList" style="margin-top: 10px;">
+                    <div class="empty-state">暂无管理员</div>
+                </div>
+            </div>
+
+            <!-- 通知规则 -->
+            <div class="section" style="margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="border: none; margin: 0; padding: 0;">📋 商机通知规则</h2>
+                    <button class="btn btn-primary" onclick="openAddRuleModal()">＋ 自定义规则</button>
+                </div>
+                <div style="font-size: 13px; color: #888; margin-bottom: 16px;">每条规则触发后会实时通过 WhatsApp 通知所有管理员</div>
+                <div class="message" id="notifyRuleMsg"></div>
+                <div id="notifyRuleList" style="margin-top: 10px;">
+                    <div class="empty-state">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加/编辑文档模态框 -->
+    <div class="modal" id="docModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="docModalTitle">添加知识库文档</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <!-- 编辑模式标识 -->
+            <input type="hidden" id="editingDocId" value="">
+            
+            <!-- Tab 切换 -->
+            <div id="docTabBar" style="display: flex; gap: 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;">
+                <button id="docTabText" onclick="switchDocTab('text')" style="flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #075e54; border-bottom: 2px solid #075e54; margin-bottom: -2px;">✏️ 输入文字</button>
+                <button id="docTabFile" onclick="switchDocTab('file')" style="flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #999; border-bottom: 2px solid transparent; margin-bottom: -2px;">📎 附件管理</button>
+            </div>
+            
+            <!-- Tab1: 输入文字 -->
+            <div id="docPanelText">
+                <div class="form-group">
+                    <label>文档标题</label>
+                    <input type="text" id="docTitle" placeholder="输入文档标题">
+                </div>
+                <div class="form-group">
+                    <label>分类</label>
+                    <select id="docCategory">
+                        <option value="general">通用</option>
+                        <option value="product">产品</option>
+                        <option value="service">服务</option>
+                        <option value="faq">常见问题</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>文档内容</label>
+                    <textarea id="docContent" rows="10" placeholder="输入文档内容..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveDocument()">保存</button>
+                </div>
+            </div>
+            
+            <!-- Tab2: 附件管理 -->
+            <div id="docPanelFile" style="display:none;">
+                <!-- 当前附件列表 -->
+                <div class="form-group">
+                    <label>📎 附件列表 <small style="color: #999;">(可添加多个图片、PDF等附件)</small></label>
+                    <div id="attachmentsList" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px;">
+                        <!-- 附件卡片将动态插入这里 -->
+                        <div id="noAttachmentsTip" style="width: 100%; padding: 20px; text-align: center; color: #999; background: #f9f9f9; border-radius: 6px; border: 1px dashed #ddd;">
+                            暂无附件，点击下方区域添加
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 添加附件区域 -->
+                <div id="fileDropZone" style="border: 2px dashed #075e54; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #f0f9f7; transition: background 0.2s; margin-top: 10px;" onclick="document.getElementById('attachmentInput').click()" ondragover="event.preventDefault(); this.style.background='#d4edea'" ondragleave="this.style.background='#f0f9f7'" ondrop="handleAttachmentDrop(event)">
+                    <div style="font-size: 24px; margin-bottom: 6px;">➕</div>
+                    <div style="font-size: 14px; color: #075e54; font-weight: 600;">点击或拖放添加附件</div>
+                    <div style="font-size: 11px; color: #999; margin-top: 4px;">支持: JPG, PNG, GIF, PDF, DOCX, TXT &nbsp;·&nbsp; 最大 50MB</div>
+                    <input type="file" id="attachmentInput" style="display:none;" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.docx,.doc,.txt,.md,.csv" onchange="handleAttachmentSelect(this)">
+                </div>
+                
+                <!-- 上传进度 -->
+                <div id="attachmentUploadProgress" style="display:none; margin-top: 12px;">
+                    <div style="height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden;">
+                        <div id="attachmentUploadProgressBar" style="height: 100%; width: 0%; background: #075e54; transition: width 0.3s;"></div>
+                    </div>
+                    <div id="attachmentUploadProgressText" style="font-size: 12px; color: #666; margin-top: 4px;"></div>
+                </div>
+                
+                <div class="modal-footer" style="margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 创建/编辑发送计划模态框 -->
+    <div class="modal" id="scheduleModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 id="scheduleModalTitle">创建发送计划</h3>
+                <button class="close-btn" onclick="closeScheduleModal()">&times;</button>
+            </div>
+            
+            <!-- 编辑模式标识 -->
+            <input type="hidden" id="editingScheduleId" value="">
+            
+            <div class="form-group">
+                <label>计划名称</label>
+                <input type="text" id="scheduleName" placeholder="例如：新客户欢迎消息">
+            </div>
+            
+            <div class="form-group">
+                <label>目标标签（多选）</label>
+                <div id="scheduleTagSelector" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                    <span style="color: #aaa; font-size: 13px; line-height: 24px;">加载标签中...</span>
+                </div>
+                <input type="hidden" id="scheduleTargetTags" value="">
+            </div>
+            
+            <div class="form-group">
+                <label>消息模板</label>
+                <textarea id="messageTemplate" rows="6" placeholder="输入消息内容...
+可用变量：
+{{name}} - 客户名称
+{{phone}} - 客户电话
+{{category}} - 客户分类"></textarea>
+            </div>
+            
+            <div class="form-row" style="display: flex; gap: 20px;">
+                <div class="form-group" style="flex: 2;">
+                    <label>执行时间</label>
+                    <input type="datetime-local" id="scheduleTime">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>发送间隔（秒）</label>
+                    <input type="number" id="intervalSeconds" value="60" min="10">
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeScheduleModal()">取消</button>
+                <button class="btn btn-primary" id="saveScheduleBtn" onclick="saveSchedule()">创建计划</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 大模型提供商模态框 -->
+    <div class="modal" id="providerModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="providerModalTitle">添加大模型提供商</h3>
+                <button class="close-btn" onclick="closeProviderModal()">&times;</button>
+            </div>
+            
+            <input type="hidden" id="providerId">
+            
+            <div class="form-group">
+                <label>显示名称 *</label>
+                <input type="text" id="providerName" placeholder="例如：DeepSeek官方">
+            </div>
+            
+            <div class="form-group">
+                <label>提供商类型 *</label>
+                <select id="providerType">
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="azure">Azure OpenAI</option>
+                    <option value="claude">Claude (Anthropic)</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>API Key *</label>
+                <input type="password" id="providerApiKey" placeholder="sk-...">
+            </div>
+            
+            <div class="form-group">
+                <label>API Base URL</label>
+                <input type="text" id="providerBaseUrl" placeholder="https://api.openai.com/v1">
+            </div>
+            
+            <div class="form-group">
+                <label>默认模型 *</label>
+                <input type="text" id="providerModel" placeholder="例如：deepseek-chat">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>温度 (0-1)</label>
+                    <input type="number" id="providerTemp" value="0.7" min="0" max="1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>最大Token</label>
+                    <input type="number" id="providerTokens" value="500" min="100" max="4000">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>超时时间（秒）</label>
+                <input type="number" id="providerTimeout" value="30" min="5" max="120">
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="providerIsDefault"> 设为默认提供商
+                </label>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeProviderModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveProvider()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI智能体模态框 -->
+    <div class="modal" id="agentModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="agentModalTitle">新建智能体</h3>
+                <button class="close-btn" onclick="closeAgentModal()">&times;</button>
+            </div>
+            
+            <input type="hidden" id="agentId">
+            
+            <div class="form-group">
+                <label>智能体名称 *</label>
+                <input type="text" id="agentName" placeholder="例如：销售助手">
+            </div>
+            
+            <div class="form-group">
+                <label>描述</label>
+                <input type="text" id="agentDesc" placeholder="简短描述这个智能体的用途">
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>系统提示词 *</span>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="optimizePrompt()" id="optimizeBtn">
+                        ✨ 优化提示词
+                    </button>
+                </label>
+                <textarea id="agentPrompt" rows="5" placeholder="你是小芃科技的智能客服助手..."></textarea>
+                <div id="optimizeResult" style="margin-top: 10px; display: none;">
+                    <div style="background: #f0f9f7; border: 1px solid #075e54; border-radius: 4px; padding: 15px;">
+                        <div style="font-weight: 600; color: #075e54; margin-bottom: 10px;">✨ 优化结果</div>
+                        <div id="optimizedContent" style="white-space: pre-wrap; font-size: 14px; line-height: 1.6;"></div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="applyOptimizedPrompt()">应用优化结果</button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="closeOptimizeResult()">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>选择大模型提供商</label>
+                <select id="agentProvider">
+                    <option value="">使用默认提供商</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>指定模型ID（可选）</label>
+                <input type="text" id="agentModelId" placeholder="留空使用提供商默认模型">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>温度 (可选)</label>
+                    <input type="number" id="agentTemp" min="0" max="1" step="0.1" placeholder="默认">
+                </div>
+                <div class="form-group">
+                    <label>最大Token (可选)</label>
+                    <input type="number" id="agentTokens" min="100" max="4000" placeholder="默认">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>优先级</label>
+                <input type="number" id="agentPriority" value="0" min="0">
+                <small style="color: #666;">数字越大优先级越高</small>
+            </div>
+            
+            <div class="form-group">
+                <label>适用客户标签 <small style="color: #999; font-weight: normal;">(一个标签只能绑定一个智能体)</small></label>
+                <div id="agentTagCheckboxes" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;">
+                    <!-- 动态加载 -->
+                </div>
+                <small style="color: #666; display: block; margin-top: 8px;">
+                    💡 提示：当客户拥有多个标签时，系统会选择优先级最高的智能体进行回复
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label>挂载知识库 <small style="color: #999; font-weight: normal;">(可多选)</small></label>
+                <div id="agentKnowledgeCheckboxes" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;">
+                    <span style="color: #999;">加载中...</span>
+                </div>
+                <small style="color: #666; display: block; margin-top: 8px;">
+                    📚 AI回复时优先使用挂载知识库内容
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="agentIsDefault"> 设为默认智能体
+                </label>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAgentModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveAgent()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 客户标签模态框 -->
+    <div class="modal" id="tagModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 id="tagModalTitle">新建标签</h3>
+                <button class="close-btn" onclick="closeTagModal()">&times;</button>
+            </div>
+            
+            <input type="hidden" id="tagId">
+            
+            <div class="form-group">
+                <label>标签名称 *</label>
+                <input type="text" id="tagName" placeholder="例如：VIP客户">
+            </div>
+            
+            <div class="form-group">
+                <label>颜色</label>
+                <input type="color" id="tagColor" value="#007bff" style="height: 40px;">
+            </div>
+            
+            <div class="form-group">
+                <label>描述</label>
+                <input type="text" id="tagDesc" placeholder="标签说明（可选）">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTagModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTag()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 自动打标签规则模态框 -->
+    <div class="modal" id="autoTagRuleModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="autoTagRuleModalTitle">新建自动打标签规则</h3>
+                <button class="close-btn" onclick="closeAutoTagRuleModal()">&times;</button>
+            </div>
+            
+            <input type="hidden" id="autoTagRuleId">
+            
+            <div class="form-group">
+                <label>规则名称 *</label>
+                <input type="text" id="autoTagRuleName" placeholder="例如：客户要求报价">
+            </div>
+            
+            <div class="form-group">
+                <label>选择标签 *</label>
+                <select id="autoTagRuleTagId">
+                    <option value="">请选择要打的标签</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>打标签条件 *</label>
+                <select id="autoTagRuleCondition" onchange="onConditionTypeChange()">
+                    <option value="">请选择条件类型</option>
+                    <option value="new_customer">新客户（没有回复或简单信息往来）</option>
+                    <option value="follow_up">跟进中（有来回对答或问价/需求）</option>
+                    <option value="old_customer">老客户（有报价有交易意向）</option>
+                    <option value="quote_requested">客户问价格/需求</option>
+                    <option value="keyword_match">关键词匹配</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="keywordConfigGroup" style="display: none;">
+                <label>关键词（多个用逗号分隔）</label>
+                <input type="text" id="autoTagRuleKeywords" placeholder="例如：优惠,折扣,便宜">
+                <small style="color: #666;">当客户消息包含这些关键词时，自动打上标签</small>
+            </div>
+            
+            <div class="form-group">
+                <label>优先级</label>
+                <input type="number" id="autoTagRulePriority" value="0" min="0">
+                <small style="color: #666;">数字越大优先级越高</small>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAutoTagRuleModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveAutoTagRule()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        // 等待 DOM 完全加载后再初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 标签切换
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+                    
+                    if (tab.dataset.tab === 'llm') {
+                        loadProviders();
+                    } else if (tab.dataset.tab === 'agents') {
+                        loadAgents();
+                        loadProviders();
+                    } else if (tab.dataset.tab === 'tags') {
+                        loadTags();
+                        loadAutoTagRules();
+                        loadBatchTagData();
+                    } else if (tab.dataset.tab === 'knowledge') {
+                        loadDocuments();
+                    } else if (tab.dataset.tab === 'scheduler') {
+                        loadSchedules();
+                    } else if (tab.dataset.tab === 'contacts') {
+                        loadImportTags();
+                    } else if (tab.dataset.tab === 'notify') {
+                        loadNotifyTab();
+                    }
+                });
+            });
+            
+            // 初始加载 - 根据当前激活的标签页加载对应数据
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) {
+                const tabName = activeTab.dataset.tab;
+                if (tabName === 'llm') {
+                    loadProviders();
+                } else if (tabName === 'agents') {
+                    loadAgents();
+                    loadProviders();
+                } else if (tabName === 'tags') {
+                    loadTags();
+                } else if (tabName === 'knowledge') {
+                    loadDocuments();
+                } else if (tabName === 'scheduler') {
+                    loadSchedules();
+                }
+            }
+        });
+        
+        // 加载LLM配置
+        async function loadLLMConfig() {
+            try {
+                const res = await fetch(`${API_BASE}/config/llm`);
+                const data = await res.json();
+                
+                if (data.success && data.config) {
+                    const statusEl = document.getElementById('apiKeyStatus');
+                    if (statusEl) {
+                        if (data.config.api_key_set) {
+                            statusEl.textContent = '已设置';
+                            statusEl.className = 'api-key-status set';
+                        } else {
+                            statusEl.textContent = '未设置';
+                            statusEl.className = 'api-key-status not-set';
+                        }
+                    }
+                    const apiKeyInput = document.getElementById('apiKey');
+                    if (apiKeyInput && data.config.api_key_set) {
+                        apiKeyInput.placeholder = '••••••••••••••••••••••••••';
+                    }
+                    
+                    document.getElementById('baseUrl').value = data.config.base_url;
+                    document.getElementById('model').value = data.config.model;
+                }
+            } catch (e) {
+                console.error('加载配置失败:', e);
+            }
+        }
+        
+        // 保存LLM配置 - 防御性编程
+        const llmConfigForm = document.getElementById('llmConfigForm');
+        if (llmConfigForm) {
+            llmConfigForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const apiKey = document.getElementById('apiKey').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            let model = document.getElementById('model').value;
+            
+            if (model === 'custom') {
+                model = document.getElementById('customModel').value;
+            }
+            
+            if (!apiKey) {
+                showMessage('configMessage', '请输入API Key', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/config/llm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey, base_url: baseUrl, model })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    showMessage('configMessage', '配置已保存', 'success');
+                    document.getElementById('apiKey').value = '';
+                    loadLLMConfig();
+                } else {
+                    showMessage('configMessage', data.message || '保存失败', 'error');
+                }
+            } catch (e) {
+                showMessage('configMessage', '保存失败: ' + e.message, 'error');
+            }
+            });
+        }
+        
+        // 删除配置 - 防御性编程，先检查元素是否存在
+        const deleteConfigBtn = document.getElementById('deleteConfigBtn');
+        if (deleteConfigBtn) {
+            deleteConfigBtn.addEventListener('click', async () => {
+                if (!confirm('确定要删除 API 配置吗？')) return;
+                        
+                try {
+                    const res = await fetch(`${API_BASE}/config/llm`, {
+                        method: 'DELETE'
+                    });
+                            
+                    const data = await res.json();
+                            
+                    if (data.success) {
+                        showMessage('configMessage', '配置已删除', 'success');
+                        loadLLMConfig();
+                    }
+                } catch (e) {
+                    showMessage('configMessage', '删除失败', 'error');
+                }
+            });
+        }
+                
+        // 模型选择 - 防御性编程
+        const modelSelect = document.getElementById('model');
+        if (modelSelect) {
+            modelSelect.addEventListener('change', (e) => {
+                const customInput = document.getElementById('customModel');
+                if (customInput) {
+                    customInput.style.display = e.target.value === 'custom' ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // 加载文档
+        async function loadDocuments() {
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/documents`);
+                const data = await res.json();
+                
+                const listEl = document.getElementById('docList');
+                
+                if (data.documents && data.documents.length > 0) {
+                    listEl.innerHTML = data.documents.map(d => {
+                        const isImage = d.type === 'image';
+                        const isPdf = d.type === 'pdf';
+                        const isWord = d.type === 'word';
+                        const typeIcon = isImage ? '🖼️' : isPdf ? '📎' : isWord ? '📝' : '📜';
+                        const typeLabel = isImage ? '图片' : isPdf ? 'PDF' : isWord ? 'Word' : '文字';
+                        
+                        return `
+                        <div class="doc-item" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-bottom: 1px solid #f0f0f0;">
+                            ${ isImage && d.file_url
+                                ? `<img src="${d.file_url}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 6px; flex-shrink: 0; border: 1px solid #e0e0e0;">`
+                                : `<div style="width: 56px; height: 56px; background: #f0f9f7; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;">${typeIcon}</div>`
+                            }
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; font-size: 14px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(d.title)}</div>
+                                <div style="font-size: 12px; color: #888; margin-top: 3px;">
+                                    <span style="background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 4px; font-size: 11px;">${typeLabel}</span>
+                                    &nbsp;${escapeHtml(d.category)} &middot; ${new Date(d.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                                ${ d.file_url ? `<button class="btn btn-secondary btn-small" onclick="copyFileUrl('${d.file_url}')">&#128279; 复制链接</button>` : '' }
+                                <button class="btn btn-secondary btn-small" onclick="editDocument(${d.id}, '${d.type || 'text'}')">✏️ 编辑</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteDocument(${d.id})">删除</button>
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    listEl.innerHTML = '<div class="empty-state">暂无文档</div>';
+                }
+            } catch (e) {
+                console.error('加载文档失败:', e);
+            }
+        }
+        
+        // 添加文档 - 防御性编程
+        const addDocBtn = document.getElementById('addDocBtn');
+        if (addDocBtn) {
+            addDocBtn.addEventListener('click', () => {
+                switchDocTab('text');
+                const docModal = document.getElementById('docModal');
+                if (docModal) docModal.classList.add('show');
+            });
+        }
+        
+        function switchDocTab(tab) {
+            const textPanel = document.getElementById('docPanelText');
+            const filePanel = document.getElementById('docPanelFile');
+            const tabText = document.getElementById('docTabText');
+            const tabFile = document.getElementById('docTabFile');
+            if (tab === 'text') {
+                textPanel.style.display = '';
+                filePanel.style.display = 'none';
+                tabText.style.color = '#075e54';
+                tabText.style.borderBottomColor = '#075e54';
+                tabFile.style.color = '#999';
+                tabFile.style.borderBottomColor = 'transparent';
+            } else {
+                textPanel.style.display = 'none';
+                filePanel.style.display = '';
+                tabFile.style.color = '#075e54';
+                tabFile.style.borderBottomColor = '#075e54';
+                tabText.style.color = '#999';
+                tabText.style.borderBottomColor = 'transparent';
+            }
+        }
+        
+        let _selectedFile = null;
+        
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (file) showFilePreview(file);
+        }
+        
+        function handleFileDrop(event) {
+            event.preventDefault();
+            document.getElementById('fileDropZone').style.background = '#f0f9f7';
+            const file = event.dataTransfer.files[0];
+            if (file) showFilePreview(file);
+        }
+        
+        function showFilePreview(file) {
+            _selectedFile = file;
+            const preview = document.getElementById('filePreview');
+            const img = document.getElementById('filePreviewImg');
+            const icon = document.getElementById('filePreviewIcon');
+            const nameEl = document.getElementById('filePreviewName');
+            const sizeEl = document.getElementById('filePreviewSize');
+            
+            nameEl.textContent = file.name;
+            sizeEl.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+            
+            const isImage = file.type.startsWith('image/');
+            if (isImage) {
+                img.style.display = '';
+                icon.style.display = 'none';
+                const reader = new FileReader();
+                reader.onload = e => { img.src = e.target.result; };
+                reader.readAsDataURL(file);
+            } else {
+                img.style.display = 'none';
+                icon.style.display = 'flex';
+                const ext = file.name.split('.').pop().toLowerCase();
+                icon.textContent = ext === 'pdf' ? '📎' : (ext === 'docx' || ext === 'doc') ? '📝' : '📜';
+            }
+            preview.style.display = '';
+        }
+        
+        function clearFileSelection() {
+            _selectedFile = null;
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('filePreviewImg').src = '';
+        }
+        
+        // 注意：uploadFile 函数已被附件管理功能取代
+        // 现在使用 uploadAttachment 函数处理附件上传
+        
+        function copyFileUrl(fileUrl) {
+            const fullUrl = window.location.origin + fileUrl;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                showMessage('kbMessage', '链接已复制到剪贴板', 'success');
+            }).catch(() => {
+                prompt('请手动复制链接:', fullUrl);
+            });
+        }
+        
+        // ============ 附件管理功能 ============
+        
+        let _currentAttachments = []; // 当前文档的附件列表
+        let _currentDocId = null; // 当前编辑的文档ID
+        
+        // 处理附件选择
+        function handleAttachmentSelect(input) {
+            const file = input.files[0];
+            if (file) uploadAttachment(file);
+            input.value = ''; // 清空，允许重复选择同一文件
+        }
+        
+        // 处理附件拖放
+        function handleAttachmentDrop(event) {
+            event.preventDefault();
+            document.getElementById('fileDropZone').style.background = '#f0f9f7';
+            const file = event.dataTransfer.files[0];
+            if (file) uploadAttachment(file);
+        }
+        
+        // 上传附件
+        async function uploadAttachment(file) {
+            const docId = document.getElementById('editingDocId').value;
+            if (!docId) {
+                alert('请先保存文档，再添加附件');
+                return;
+            }
+            
+            const progress = document.getElementById('attachmentUploadProgress');
+            const bar = document.getElementById('attachmentUploadProgressBar');
+            const progressText = document.getElementById('attachmentUploadProgressText');
+            
+            progress.style.display = '';
+            bar.style.width = '30%';
+            progressText.textContent = '正在上传...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const res = await fetch(`${API_BASE}/knowledge/documents/${docId}/attachments`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                bar.style.width = '80%';
+                const data = await res.json();
+                bar.style.width = '100%';
+                
+                if (data.success) {
+                    progressText.textContent = '上传成功!';
+                    // 刷新附件列表
+                    await loadAttachments(docId);
+                    setTimeout(() => {
+                        progress.style.display = 'none';
+                        bar.style.width = '0%';
+                    }, 800);
+                } else {
+                    progressText.textContent = '上传失败';
+                    alert('上传失败: ' + (data.detail || data.message || '未知错误'));
+                }
+            } catch (e) {
+                progressText.textContent = '上传失败';
+                alert('上传失败: ' + e.message);
+            }
+        }
+        
+        // 加载附件列表
+        async function loadAttachments(docId) {
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/documents/${docId}/attachments`);
+                const data = await res.json();
+                if (data.success) {
+                    _currentAttachments = data.attachments || [];
+                    renderAttachmentsList();
+                }
+            } catch (e) {
+                console.error('加载附件失败:', e);
+            }
+        }
+        
+        // 渲染附件列表
+        function renderAttachmentsList() {
+            const container = document.getElementById('attachmentsList');
+            const noTip = document.getElementById('noAttachmentsTip');
+            
+            // 清除现有附件卡片（保留提示元素）
+            const existingCards = container.querySelectorAll('.attachment-card');
+            existingCards.forEach(card => card.remove());
+            
+            if (_currentAttachments.length === 0) {
+                noTip.style.display = 'block';
+            } else {
+                noTip.style.display = 'none';
+                
+                _currentAttachments.forEach(att => {
+                    const card = createAttachmentCard(att);
+                    container.appendChild(card);
+                });
+            }
+        }
+        
+        // 创建附件卡片
+        function createAttachmentCard(att) {
+            const div = document.createElement('div');
+            div.className = 'attachment-card';
+            div.style.cssText = 'position: relative; width: 140px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: white;';
+            
+            const isImage = att.file_type === 'image';
+            const icon = isImage ? '🖼️' : (att.file_type === 'pdf' ? '📄' : '📎');
+            const displayName = att.name || att.file_name;
+            
+            div.innerHTML = `
+                <div style="height: 80px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; ${isImage ? 'padding: 0;' : ''}">
+                    ${isImage ? `<img src="${att.file_url}" style="width: 100%; height: 100%; object-fit: cover;">` : `<span style="font-size: 36px;">${icon}</span>`}
+                </div>
+                <div style="padding: 8px;">
+                    <div class="attachment-name" style="font-size: 12px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;" title="${displayName}">${displayName}</div>
+                    <div style="font-size: 10px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${att.file_name}">${att.file_name}</div>
+                    <button onclick="editAttachmentName(${att.id}, '${displayName.replace(/'/g, "\\'")}')" style="margin-top: 6px; padding: 2px 8px; font-size: 11px; border: 1px solid #075e54; background: white; color: #075e54; border-radius: 4px; cursor: pointer; width: 100%;">编辑名称</button>
+                </div>
+                <button onclick="deleteAttachment(${att.id})" style="position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; border: none; background: #ff4444; color: white; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">×</button>
+            `;
+            
+            return div;
+        }
+        
+        // 编辑附件名称
+        async function editAttachmentName(attachmentId, currentName) {
+            const newName = prompt('请输入附件名称（用于AI识别）：', currentName);
+            if (newName === null || newName.trim() === '' || newName.trim() === currentName) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/attachments/${attachmentId}/name`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    // 更新本地数据
+                    const att = _currentAttachments.find(a => a.id === attachmentId);
+                    if (att) att.name = newName.trim();
+                    renderAttachmentsList();
+                    showMessage('kbMessage', '附件名称已更新', 'success');
+                } else {
+                    alert('更新失败: ' + (data.detail || data.message || '未知错误'));
+                }
+            } catch (e) {
+                alert('更新失败: ' + e.message);
+            }
+        }
+        
+        // 删除附件
+        async function deleteAttachment(attachmentId) {
+            if (!confirm('确定要删除这个附件吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/attachments/${attachmentId}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    // 从列表中移除
+                    _currentAttachments = _currentAttachments.filter(a => a.id !== attachmentId);
+                    renderAttachmentsList();
+                    showMessage('kbMessage', '附件已删除', 'success');
+                } else {
+                    alert('删除失败: ' + (data.detail || data.message || '未知错误'));
+                }
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('docModal').classList.remove('show');
+            document.getElementById('docTitle').value = '';
+            document.getElementById('docContent').value = '';
+            document.getElementById('editingDocId').value = '';
+            document.getElementById('docModalTitle').textContent = '添加知识库文档';
+            document.getElementById('docTabBar').style.display = 'flex';
+            
+            // 重置附件相关状态
+            _currentAttachments = [];
+            _currentDocId = null;
+            renderAttachmentsList();
+            document.getElementById('attachmentUploadProgress').style.display = 'none';
+            
+            // 切换回文字 Tab
+            switchDocTab('text');
+        }
+        
+        async function editDocument(id, docType = 'text') {
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/documents/${id}`);
+                const data = await res.json();
+                if (!data.success) { alert('获取文档失败'); return; }
+                const doc = data.document;
+                
+                // 填入表单
+                document.getElementById('editingDocId').value = doc.id;
+                
+                // 修改弹窗标题
+                document.getElementById('docModalTitle').textContent = '编辑文档';
+                
+                // 编辑模式下显示 Tab 栏，让用户可以切换
+                document.getElementById('docTabBar').style.display = 'flex';
+                
+                // 填充文字编辑区域的数据
+                document.getElementById('docTitle').value = doc.title || '';
+                document.getElementById('docContent').value = doc.content || '';
+                document.getElementById('docCategory').value = doc.category || 'general';
+                
+                // 填充文件上传区域的数据
+                // 加载附件列表（如果有）
+                if (doc.attachments && doc.attachments.length > 0) {
+                    _currentAttachments = doc.attachments;
+                    renderAttachmentsList();
+                } else {
+                    _currentAttachments = [];
+                    renderAttachmentsList();
+                }
+                
+                // 默认显示文字 Tab
+                switchDocTab('text');
+                
+                document.getElementById('docModal').classList.add('show');
+            } catch(e) {
+                alert('加载文档失败: ' + e.message);
+            }
+        }
+        
+        // 显示当前文件信息（编辑模式）
+        function showCurrentFileInfo(doc) {
+            const previewDiv = document.getElementById('filePreview');
+            const imgEl = document.getElementById('filePreviewImg');
+            const iconEl = document.getElementById('filePreviewIcon');
+            const nameEl = document.getElementById('filePreviewName');
+            const sizeEl = document.getElementById('filePreviewSize');
+            
+            previewDiv.style.display = 'block';
+            nameEl.textContent = doc.file_name || doc.title || '当前文件';
+            sizeEl.textContent = '点击上方区域可重新上传替换';
+            
+            // 根据类型显示预览
+            if (doc.file_url && (doc.type === 'image' || doc.file_type?.startsWith('image/'))) {
+                imgEl.src = doc.file_url;
+                imgEl.style.display = 'block';
+                iconEl.style.display = 'none';
+            } else {
+                imgEl.style.display = 'none';
+                iconEl.style.display = 'flex';
+                const icons = { 'pdf': '📄', 'docx': '📝', 'doc': '📝', 'txt': '📃', 'md': '📃' };
+                iconEl.textContent = icons[doc.type] || icons[doc.file_type] || '📎';
+            }
+            
+            // 修改上传按钮文字
+            document.getElementById('uploadBtn').textContent = '保存修改';
+        }
+        
+        async function saveDocument() {
+            const editingId = document.getElementById('editingDocId').value;
+            
+            // 判断当前激活的是哪个 Tab
+            const textPanel = document.getElementById('docPanelText');
+            const isTextTab = textPanel.style.display !== 'none';
+            
+            if (isTextTab) {
+                // 文字 Tab：保存文字内容
+                const title = document.getElementById('docTitle').value.trim();
+                const category = document.getElementById('docCategory').value;
+                const content = document.getElementById('docContent').value.trim();
+                
+                if (!title || !content) {
+                    alert('请填写标题和内容');
+                    return;
+                }
+                
+                try {
+                    let res;
+                    if (editingId) {
+                        // 编辑模式：PUT
+                        res = await fetch(`${API_BASE}/knowledge/documents/${editingId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ title, category, content })
+                        });
+                    } else {
+                        // 新增模式：POST
+                        res = await fetch(`${API_BASE}/knowledge/documents`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ title, category, content })
+                        });
+                    }
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        closeModal();
+                        loadDocuments();
+                        showMessage('kbMessage', editingId ? '文档已更新' : '文档已添加', 'success');
+                    } else {
+                        alert(data.message || (editingId ? '更新失败' : '添加失败'));
+                    }
+                } catch (e) {
+                    alert('操作失败: ' + e.message);
+                }
+            } else {
+                // 文件 Tab：调用文件上传逻辑
+                uploadFile();
+            }
+        }
+        
+        async function deleteDocument(id) {
+            if (!confirm('确定要删除此文档吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/documents/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    loadDocuments();
+                    showMessage('kbMessage', '文档已删除', 'success');
+                }
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        function showMessage(id, text, type) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = `message ${type} show`;
+            
+            setTimeout(() => {
+                el.classList.remove('show');
+            }, 3000);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 初始化
+        loadLLMConfig();
+        
+        // 发送计划功能 - 防御性编程
+        const addScheduleBtn = document.getElementById('addScheduleBtn');
+        if (addScheduleBtn) {
+            addScheduleBtn.addEventListener('click', async () => {
+                const scheduleModal = document.getElementById('scheduleModal');
+                if (scheduleModal) {
+                    // 加载标签选择器
+                    await loadScheduleTags([]);
+                    document.getElementById('scheduleTargetTags').value = '';
+                    
+                    scheduleModal.classList.add('show');
+                    // 设置默认时间为明天同一时间
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setMinutes(0);
+                    const scheduleTime = document.getElementById('scheduleTime');
+                    if (scheduleTime) scheduleTime.value = tomorrow.toISOString().slice(0, 16);
+                }
+            });
+        }
+        
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').classList.remove('show');
+            document.getElementById('scheduleName').value = '';
+            document.getElementById('messageTemplate').value = '';
+            document.getElementById('scheduleTargetTags').value = '';
+            document.getElementById('editingScheduleId').value = '';
+            document.getElementById('scheduleModalTitle').textContent = '创建发送计划';
+            document.getElementById('saveScheduleBtn').textContent = '创建计划';
+            // 清空标签选择
+            document.querySelectorAll('#scheduleTagSelector .tag-chip').forEach(chip => {
+                chip.classList.remove('selected');
+                chip.style.background = '#f0f0f0';
+                chip.style.color = '#333';
+            });
+        }
+        
+        // 加载发送计划的标签选择器
+        async function loadScheduleTags(selectedTagIds = []) {
+            const container = document.getElementById('scheduleTagSelector');
+            try {
+                const res = await fetch(`${API_BASE}/customer-tags`);
+                const data = await res.json();
+                const tags = data.tags || [];
+                
+                if (tags.length === 0) {
+                    container.innerHTML = '<span style="color: #999; font-size: 13px;">暂无标签，请先创建标签</span>';
+                    return;
+                }
+                
+                container.innerHTML = tags.map(t => {
+                    const isSelected = selectedTagIds.includes(t.id);
+                    return `<span class="tag-chip ${isSelected ? 'selected' : ''}" data-tag-id="${t.id}" 
+                        onclick="toggleScheduleTag(${t.id}, this)"
+                        style="padding: 4px 12px; border-radius: 12px; font-size: 13px; cursor: pointer; 
+                        background: ${isSelected ? '#075e54' : '#f0f0f0'}; 
+                        color: ${isSelected ? 'white' : '#333'}; border: 1px solid ${isSelected ? '#075e54' : '#ddd'};">
+                        ${escapeHtml(t.name)}
+                    </span>`;
+                }).join('');
+            } catch (e) {
+                container.innerHTML = '<span style="color: #999; font-size: 13px;">加载标签失败</span>';
+            }
+        }
+        
+        // 切换标签选择
+        function toggleScheduleTag(tagId, chipEl) {
+            const input = document.getElementById('scheduleTargetTags');
+            let selectedIds = input.value ? input.value.split(',').map(Number) : [];
+            
+            if (selectedIds.includes(tagId)) {
+                selectedIds = selectedIds.filter(id => id !== tagId);
+                chipEl.classList.remove('selected');
+                chipEl.style.background = '#f0f0f0';
+                chipEl.style.color = '#333';
+                chipEl.style.borderColor = '#ddd';
+            } else {
+                selectedIds.push(tagId);
+                chipEl.classList.add('selected');
+                chipEl.style.background = '#075e54';
+                chipEl.style.color = 'white';
+                chipEl.style.borderColor = '#075e54';
+            }
+            
+            input.value = selectedIds.join(',');
+        }
+        
+        async function editSchedule(id) {
+            try {
+                const res = await fetch(`${API_BASE}/schedules/${id}`);
+                const data = await res.json();
+                
+                if (!data.schedule) {
+                    alert('获取计划失败');
+                    return;
+                }
+                
+                const s = data.schedule;
+                
+                // 填入表单
+                document.getElementById('editingScheduleId').value = s.id;
+                document.getElementById('scheduleName').value = s.name || '';
+                document.getElementById('messageTemplate').value = s.message_template || '';
+                document.getElementById('intervalSeconds').value = s.interval_seconds || 60;
+                
+                // 加载标签并选中已有的
+                const selectedTags = s.target_tags || [];
+                await loadScheduleTags(selectedTags);
+                document.getElementById('scheduleTargetTags').value = selectedTags.join(',');
+                
+                // 转换时间为本地格式 (YYYY-MM-DDTHH:mm)
+                if (s.schedule_time) {
+                    const d = new Date(s.schedule_time);
+                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                    document.getElementById('scheduleTime').value = d.toISOString().slice(0, 16);
+                }
+                
+                // 修改弹窗标题
+                document.getElementById('scheduleModalTitle').textContent = '编辑发送计划';
+                document.getElementById('saveScheduleBtn').textContent = '保存修改';
+                
+                document.getElementById('scheduleModal').classList.add('show');
+            } catch (e) {
+                alert('加载计划失败: ' + e.message);
+            }
+        }
+        
+        async function loadSchedules() {
+            try {
+                const res = await fetch(`${API_BASE}/schedules`);
+                const data = await res.json();
+                
+                const listEl = document.getElementById('scheduleList');
+                
+                if (data.schedules && data.schedules.length > 0) {
+                    listEl.innerHTML = data.schedules.map(s => `
+                        <div class="schedule-item">
+                            <div class="schedule-info">
+                                <h4>${escapeHtml(s.name)}</h4>
+                                <div class="schedule-meta">
+                                    <span class="status-badge ${s.status}">${getStatusText(s.status)}</span>
+                                    <span>标签: ${s.target_tags && s.target_tags.length > 0 ? s.target_tags.join(', ') : '全部'}</span>
+                                    <span>时间: ${new Date(s.schedule_time).toLocaleString()}</span>
+                                </div>
+                                <div class="schedule-progress">
+                                    进度: ${s.sent_count}/${s.total_count} 
+                                    ${s.failed_count > 0 ? `(失败: ${s.failed_count})` : ''}
+                                </div>
+                            </div>
+                            <div class="schedule-actions">
+                                ${s.status === 'pending' ? `
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule(${s.id})">✏️ 编辑</button>
+                                    <button class="btn btn-primary btn-small" onclick="executeSchedule(${s.id})">立即执行</button>
+                                ` : ''}
+                                ${s.status === 'completed' ? `
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule(${s.id})">✏️ 编辑</button>
+                                ` : ''}
+                                ${s.status === 'running' ? `
+                                    <button class="btn btn-secondary btn-small" onclick="pauseSchedule(${s.id})">暂停</button>
+                                ` : ''}
+                                ${s.status === 'paused' ? `
+                                    <button class="btn btn-primary btn-small" onclick="resumeSchedule(${s.id})">恢复</button>
+                                ` : ''}
+                                <button class="btn btn-danger btn-small" onclick="deleteSchedule(${s.id})">删除</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = '<div class="empty-state">暂无计划</div>';
+                }
+            } catch (e) {
+                console.error('加载计划失败:', e);
+            }
+        }
+        
+        async function saveSchedule() {
+            const editingId = document.getElementById('editingScheduleId').value;
+            const name = document.getElementById('scheduleName').value;
+            const message_template = document.getElementById('messageTemplate').value;
+            const targetTagsStr = document.getElementById('scheduleTargetTags').value;
+            const schedule_time = document.getElementById('scheduleTime').value;
+            const interval_seconds = parseInt(document.getElementById('intervalSeconds').value);
+            
+            if (!name || !message_template || !schedule_time) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            // 解析选中的标签
+            const target_tags = targetTagsStr ? targetTagsStr.split(',').map(Number).filter(id => id) : [];
+            
+            try {
+                let res;
+                if (editingId) {
+                    // 编辑模式：PUT
+                    res = await fetch(`${API_BASE}/schedules/${editingId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name,
+                            message_template,
+                            target_tags,
+                            schedule_time: new Date(schedule_time).toISOString(),
+                            interval_seconds
+                        })
+                    });
+                } else {
+                    // 新增模式：POST
+                    res = await fetch(`${API_BASE}/schedules`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name,
+                            message_template,
+                            target_tags,
+                            schedule_time: new Date(schedule_time).toISOString(),
+                            interval_seconds,
+                            target_tags: []
+                        })
+                    });
+                }
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    closeScheduleModal();
+                    loadSchedules();
+                    showMessage('scheduleMessage', editingId ? '计划已更新' : data.message, 'success');
+                } else {
+                    alert(data.message || (editingId ? '更新失败' : '创建失败'));
+                }
+            } catch (e) {
+                alert((editingId ? '更新' : '创建') + '失败: ' + e.message);
+            }
+        }
+        
+        // 全局执行状态轮询
+        let _scheduleProgressInterval = null;
+        
+        async function executeSchedule(id) {
+            if (!confirm('确定要立即执行此计划？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/schedules/${id}/execute`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showMessage('scheduleMessage', '计划开始执行', 'success');
+                    loadSchedules();
+                    // 开始轮询进度
+                    startScheduleProgressPolling(id);
+                }
+            } catch (e) {
+                alert('执行失败');
+            }
+        }
+        
+        // 开始轮询计划执行进度
+        function startScheduleProgressPolling(scheduleId) {
+            // 清除之前的轮询
+            if (_scheduleProgressInterval) {
+                clearInterval(_scheduleProgressInterval);
+            }
+            
+            // 显示进度弹窗
+            showScheduleProgressModal(scheduleId);
+            
+            // 每2秒轮询一次
+            _scheduleProgressInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/schedules/${scheduleId}`);
+                    const data = await res.json();
+                    
+                    if (data.schedule) {
+                        updateScheduleProgress(data.schedule, data.tasks || []);
+                        
+                        // 如果计划完成或失败，停止轮询
+                        if (['completed', 'failed', 'paused'].includes(data.schedule.status)) {
+                            clearInterval(_scheduleProgressInterval);
+                            _scheduleProgressInterval = null;
+                            setTimeout(() => {
+                                closeScheduleProgressModal();
+                                loadSchedules();
+                            }, 2000);
+                        }
+                    }
+                } catch (e) {
+                    console.error('轮询进度失败:', e);
+                }
+            }, 2000);
+        }
+        
+        // 显示执行进度弹窗
+        function showScheduleProgressModal(scheduleId) {
+            // 创建或更新进度弹窗
+            let modal = document.getElementById('scheduleProgressModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'scheduleProgressModal';
+                modal.className = 'modal show';
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center;';
+                modal.innerHTML = `
+                    <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                        <h3 style="margin-bottom: 20px; color: #333;">📤 计划执行中...</h3>
+                        <div id="scheduleProgressContent">
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 40px; margin-bottom: 15px;">⏳</div>
+                                <div style="color: #666;">正在准备发送...</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                modal.classList.add('show');
+                modal.style.display = 'flex';
+            }
+        }
+        
+        // 更新进度显示
+        function updateScheduleProgress(schedule, tasks) {
+            const content = document.getElementById('scheduleProgressContent');
+            if (!content) return;
+            
+            const total = schedule.total_count || 0;
+            const sent = schedule.sent_count || 0;
+            const failed = schedule.failed_count || 0;
+            const progress = total > 0 ? Math.round((sent + failed) / total * 100) : 0;
+            
+            // 获取最近的发送记录
+            const recentTasks = tasks.slice(-5).reverse();
+            
+            content.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                        <span>进度: ${sent + failed}/${total}</span>
+                        <span style="color: #075e54; font-weight: 600;">${progress}%</span>
+                    </div>
+                    <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                        <div style="height: 100%; width: ${progress}%; background: linear-gradient(90deg, #075e54, #128c7e); border-radius: 4px; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 10px; font-size: 13px;">
+                        <span style="color: #2e7d32;">✓ 成功: ${sent}</span>
+                        ${failed > 0 ? `<span style="color: #c62828;">✗ 失败: ${failed}</span>` : ''}
+                    </div>
+                </div>
+                
+                ${recentTasks.length > 0 ? `
+                    <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">最近发送:</div>
+                        <div style="max-height: 150px; overflow-y: auto;">
+                            ${recentTasks.map(t => `
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5;">
+                                    <span style="color: ${t.status === 'sent' ? '#2e7d32' : t.status === 'failed' ? '#c62828' : '#999'};">
+                                        ${t.status === 'sent' ? '✓' : t.status === 'failed' ? '✗' : '⏳'}
+                                    </span>
+                                    <span style="flex: 1; color: #333;">${escapeHtml(t.customer_name || t.customer_phone)}</span>
+                                    <span style="color: #999; font-size: 11px;">${t.status === 'sent' ? '已发送' : t.status === 'failed' ? '失败' : '等待中'}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${schedule.status === 'running' ? `
+                    <div style="text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <span style="display: inline-flex; align-items: center; gap: 8px; color: #075e54; font-size: 14px;">
+                            <span style="display: inline-block; width: 16px; height: 16px; border: 2px solid #075e54; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                            正在发送中...
+                        </span>
+                    </div>
+                    <style>
+                        @keyframes spin { to { transform: rotate(360deg); } }
+                    </style>
+                ` : ''}
+            `;
+        }
+        
+        // 关闭进度弹窗
+        function closeScheduleProgressModal() {
+            const modal = document.getElementById('scheduleProgressModal');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+            }
+            if (_scheduleProgressInterval) {
+                clearInterval(_scheduleProgressInterval);
+                _scheduleProgressInterval = null;
+            }
+        }
+        
+        async function pauseSchedule(id) {
+            try {
+                await fetch(`${API_BASE}/schedules/${id}/pause`, { method: 'POST' });
+                loadSchedules();
+            } catch (e) {
+                alert('暂停失败');
+            }
+        }
+        
+        async function resumeSchedule(id) {
+            try {
+                await fetch(`${API_BASE}/schedules/${id}/resume`, { method: 'POST' });
+                loadSchedules();
+            } catch (e) {
+                alert('恢复失败');
+            }
+        }
+        
+        async function deleteSchedule(id) {
+            if (!confirm('确定要删除此计划？')) return;
+            
+            try {
+                await fetch(`${API_BASE}/schedules/${id}`, { method: 'DELETE' });
+                loadSchedules();
+                showMessage('scheduleMessage', '计划已删除', 'success');
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        function getStatusText(status) {
+            const map = {
+                'pending': '待执行',
+                'running': '执行中',
+                'completed': '已完成',
+                'paused': '已暂停',
+                'cancelled': '已取消'
+            };
+            return map[status] || status;
+        }
+        
+        // ============ 自动打标签规则管理 ============
+        let autoTagRules = [];
+        
+        async function loadAutoTagRules() {
+            try {
+                const res = await fetch(`${API_BASE}/auto-tag-rules`);
+                const data = await res.json();
+                autoTagRules = data.rules || [];
+                renderAutoTagRules();
+            } catch (e) {
+                console.error('加载自动标签规则失败:', e);
+            }
+        }
+        
+        function renderAutoTagRules() {
+            const container = document.getElementById('autoTagRuleList');
+            if (autoTagRules.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无自动打标签规则</div>';
+                return;
+            }
+            
+            const conditionTypeMap = {
+                'new_customer': '新客户（没有回复或简单往来）',
+                'follow_up': '跟进中（有来回对答或问价）',
+                'old_customer': '老客户（有报价有交易意向）',
+                'message_received': '客户有回复',
+                'quote_requested': '客户问价格/需求',
+                'keyword_match': '关键词匹配'
+            };
+            
+            container.innerHTML = autoTagRules.map(r => `
+                <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 5px;">${escapeHtml(r.name)}</div>
+                            <div style="font-size: 13px; color: #666;">
+                                条件: ${conditionTypeMap[r.condition_type] || r.condition_type}
+                                ${r.condition_config?.keywords ? ` | 关键词: ${r.condition_config.keywords.join(', ')}` : ''}
+                                ${r.priority > 0 ? ` | 优先级: ${r.priority}` : ''}
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <span style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 12px; background: ${r.tag?.color}20; color: ${r.tag?.color}; font-size: 12px; font-weight: 500;">
+                                    ${escapeHtml(r.tag?.name || '未知标签')}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-sm btn-success" onclick="executeAutoTagRule(${r.id})" title="为所有客户执行此规则">▶ 执行</button>
+                            <button class="btn btn-sm btn-secondary" onclick="editAutoTagRule(${r.id})">编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAutoTagRule(${r.id})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function onConditionTypeChange() {
+            const conditionType = document.getElementById('autoTagRuleCondition').value;
+            const keywordGroup = document.getElementById('keywordConfigGroup');
+            
+            if (conditionType === 'keyword_match') {
+                keywordGroup.style.display = 'block';
+            } else {
+                keywordGroup.style.display = 'none';
+            }
+        }
+        
+        async function openAutoTagRuleModal(id = null) {
+            document.getElementById('autoTagRuleModalTitle').textContent = id ? '编辑自动打标签规则' : '新建自动打标签规则';
+            document.getElementById('autoTagRuleId').value = id || '';
+            
+            // 加载标签列表到选择框
+            const tagSelect = document.getElementById('autoTagRuleTagId');
+            tagSelect.innerHTML = '<option value="">请选择要打的标签</option>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/customer-tags`);
+                const data = await res.json();
+                const tags = data.tags || [];
+                
+                tags.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.id;
+                    option.textContent = t.name;
+                    tagSelect.appendChild(option);
+                });
+            } catch (e) {
+                console.error('加载标签失败:', e);
+            }
+            
+            if (id) {
+                const rule = autoTagRules.find(r => r.id === id);
+                if (rule) {
+                    document.getElementById('autoTagRuleName').value = rule.name;
+                    document.getElementById('autoTagRuleTagId').value = rule.tag_id;
+                    document.getElementById('autoTagRuleCondition').value = rule.condition_type;
+                    document.getElementById('autoTagRulePriority').value = rule.priority;
+                    
+                    if (rule.condition_config?.keywords) {
+                        document.getElementById('autoTagRuleKeywords').value = rule.condition_config.keywords.join(',');
+                    }
+                    
+                    onConditionTypeChange();
+                }
+            } else {
+                document.getElementById('autoTagRuleName').value = '';
+                document.getElementById('autoTagRuleTagId').value = '';
+                document.getElementById('autoTagRuleCondition').value = '';
+                document.getElementById('autoTagRulePriority').value = '0';
+                document.getElementById('autoTagRuleKeywords').value = '';
+                onConditionTypeChange();
+            }
+            
+            document.getElementById('autoTagRuleModal').classList.add('show');
+        }
+        
+        function closeAutoTagRuleModal() {
+            document.getElementById('autoTagRuleModal').classList.remove('show');
+        }
+        
+        async function saveAutoTagRule() {
+            const id = document.getElementById('autoTagRuleId').value;
+            
+            const data = {
+                name: document.getElementById('autoTagRuleName').value,
+                tag_id: parseInt(document.getElementById('autoTagRuleTagId').value),
+                condition_type: document.getElementById('autoTagRuleCondition').value,
+                priority: parseInt(document.getElementById('autoTagRulePriority').value) || 0
+            };
+            
+            if (!data.name || !data.tag_id || !data.condition_type) {
+                alert('请填写必填项');
+                return;
+            }
+            
+            // 关键词匹配需要配置关键词
+            if (data.condition_type === 'keyword_match') {
+                const keywordsStr = document.getElementById('autoTagRuleKeywords').value.trim();
+                if (!keywordsStr) {
+                    alert('请填写关键词');
+                    return;
+                }
+                data.condition_config = {
+                    keywords: keywordsStr.split(',').map(k => k.trim()).filter(k => k)
+                };
+            } else {
+                data.condition_config = {};
+            }
+            
+            try {
+                const url = id ? `${API_BASE}/auto-tag-rules/${id}` : `${API_BASE}/auto-tag-rules`;
+                const method = id ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    showMessage('autoTagRuleMessage', id ? '规则已更新' : '规则已创建', 'success');
+                    closeAutoTagRuleModal();
+                    loadAutoTagRules();
+                } else {
+                    alert(result.message || '保存失败');
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+        
+        function editAutoTagRule(id) {
+            openAutoTagRuleModal(id);
+        }
+        
+        async function deleteAutoTagRule(id) {
+            if (!confirm('确定要删除此规则？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/auto-tag-rules/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showMessage('autoTagRuleMessage', '规则已删除', 'success');
+                    loadAutoTagRules();
+                }
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        async function executeAutoTagRule(id) {
+            if (!confirm('确定要执行此规则？将为所有符合条件的客户打上标签。')) return;
+            
+            try {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '执行中...';
+                btn.disabled = true;
+                
+                const res = await fetch(`${API_BASE}/auto-tag-rules/${id}/execute`, { method: 'POST' });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showMessage('autoTagRuleMessage', data.message, 'success');
+                } else {
+                    alert(data.message || '执行失败');
+                }
+            } catch (e) {
+                alert('执行失败: ' + e.message);
+            } finally {
+                const btn = event.target;
+                btn.textContent = '▶ 执行';
+                btn.disabled = false;
+            }
+        }
+        
+        // ============ 批量打标签功能 ============
+        let batchCustomers = [];
+        
+        // 获取客户显示名称（有名字用名字，没有名字用手机号码）
+        function getCustomerDisplayName(customer) {
+            return customer.name && customer.name.trim() ? customer.name : customer.phone;
+        }
+        
+        async function loadBatchTagData() {
+            // 加载标签列表
+            const tagSelect = document.getElementById('batchTagId');
+            tagSelect.innerHTML = '<option value="">请选择要打的标签</option>';
+            
+            try {
+                const [tagsRes, customersRes] = await Promise.all([
+                    fetch(`${API_BASE}/customer-tags`),
+                    fetch(`${API_BASE}/customers`)
+                ]);
+                
+                const tagsData = await tagsRes.json();
+                const customersData = await customersRes.json();
+                
+                // 填充标签选择框
+                const tags = tagsData.tags || [];
+                tags.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.id;
+                    option.textContent = t.name;
+                    tagSelect.appendChild(option);
+                });
+                
+                // 填充客户列表
+                batchCustomers = customersData || [];
+                renderBatchCustomerList();
+            } catch (e) {
+                console.error('加载批量打标签数据失败:', e);
+            }
+        }
+        
+        function renderBatchCustomerList(customers) {
+            const list = customers !== undefined ? customers : batchCustomers;
+            const container = document.getElementById('batchCustomerList');
+            const totalEl = document.getElementById('totalCustomerCount');
+            const filteredEl = document.getElementById('filteredCustomerCount');
+            if (totalEl) totalEl.textContent = batchCustomers.length;
+            if (filteredEl) filteredEl.textContent = list.length;
+            
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state">' + (batchCustomers.length === 0 ? '暂无客户' : '未找到匹配的客户') + '</div>';
+                updateSelectedCount();
+                return;
+            }
+            
+            container.innerHTML = list.map(c => `
+                <label style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#f0f9f7'" onmouseout="this.style.background='white'">
+                    <input type="checkbox" name="batchCustomer" value="${c.id}" class="batch-customer-checkbox" onchange="updateSelectedCount()" style="width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 500; font-size: 14px; color: #222;">${escapeHtml(getCustomerDisplayName(c))}</div>
+                        <div style="font-size: 12px; color: #888; margin-top: 2px;">${escapeHtml(c.phone)}</div>
+                        ${c.tags && c.tags.length > 0 ? `
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px;">
+                            ${c.tags.map(tag => `
+                                <span style="font-size: 11px; padding: 2px 7px; border-radius: 10px; background: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40;">${escapeHtml(tag.name)}</span>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                    </div>
+                </label>
+            `).join('');
+            updateSelectedCount();
+        }
+        
+        function filterBatchCustomers() {
+            const keyword = (document.getElementById('batchCustomerSearch').value || '').trim().toLowerCase();
+            if (!keyword) {
+                renderBatchCustomerList(batchCustomers);
+                return;
+            }
+            const filtered = batchCustomers.filter(c => {
+                const name = (getCustomerDisplayName(c) || '').toLowerCase();
+                const phone = (c.phone || '').toLowerCase();
+                return name.includes(keyword) || phone.includes(keyword);
+            });
+            renderBatchCustomerList(filtered);
+        }
+        
+        function updateSelectedCount() {
+            const count = document.querySelectorAll('input[name="batchCustomer"]:checked').length;
+            const el = document.getElementById('selectedCustomerCount');
+            if (el) el.textContent = count;
+        }
+        
+        function toggleSelectAllCustomers() {
+            const selectAll = document.getElementById('selectAllCustomers').checked;
+            document.querySelectorAll('input[name="batchCustomer"]').forEach(cb => {
+                cb.checked = selectAll;
+            });
+            updateSelectedCount();
+        }
+        
+        async function applyBatchTags() {
+            const tagId = document.getElementById('batchTagId').value;
+            if (!tagId) {
+                alert('请选择要打的标签');
+                return;
+            }
+            
+            const selectedCustomers = Array.from(document.querySelectorAll('input[name="batchCustomer"]:checked')).map(cb => cb.value);
+            if (selectedCustomers.length === 0) {
+                alert('请选择至少一个客户');
+                return;
+            }
+            
+            if (!confirm(`确定为 ${selectedCustomers.length} 个客户打上标签吗？`)) return;
+            
+            try {
+                let successCount = 0;
+                let skipCount = 0;
+                
+                for (const customerId of selectedCustomers) {
+                    try {
+                        const res = await fetch(`${API_BASE}/customers/${customerId}/tags/${tagId}`, {
+                            method: 'POST'
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            if (data.message === '标签已存在') {
+                                skipCount++;
+                            } else {
+                                successCount++;
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`为客户 ${customerId} 打标签失败:`, e);
+                    }
+                }
+                
+                showMessage('batchTagMessage', `批量打标签完成: 成功 ${successCount} 个, 跳过 ${skipCount} 个已存在`, 'success');
+                loadBatchTagData(); // 刷新列表
+            } catch (e) {
+                alert('批量打标签失败: ' + e.message);
+            }
+        }
+        
+        // ============ 大模型提供商管理 ============
+        let providers = [];
+        let agents = [];
+        let tags = [];
+        
+        async function loadProviders() {
+            try {
+                const res = await fetch(`${API_BASE}/llm-providers`);
+                const data = await res.json();
+                providers = data.providers || [];
+                renderProviders();
+                updateAgentProviderSelect();
+            } catch (e) {
+                console.error('加载提供商失败:', e);
+            }
+        }
+        
+        function renderProviders() {
+            const container = document.getElementById('providerList');
+            if (providers.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无大模型提供商配置</div>';
+                return;
+            }
+            
+            container.innerHTML = providers.map(p => `
+                <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 10px; ${p.is_default ? 'border-color: #075e54; background: #f0f9f7;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 16px;">${escapeHtml(p.name)}</div>
+                            <div style="color: #666; font-size: 13px; margin-top: 4px;">
+                                ${p.provider_type} · ${p.default_model}
+                                ${p.is_default ? '<span style="background: #075e54; color: white; padding: 2px 8px; border-radius: 3px; margin-left: 8px; font-size: 11px;">默认</span>' : ''}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-sm btn-secondary" onclick="testProvider(${p.id})">测试</button>
+                            ${!p.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultProvider(${p.id})">设为默认</button>` : ''}
+                            <button class="btn btn-sm btn-secondary" onclick="editProvider(${p.id})">编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProvider(${p.id})">删除</button>
+                        </div>
+                    </div>
+                    <div style="color: #999; font-size: 12px; margin-top: 8px;">
+                        温度: ${p.temperature} · 最大Token: ${p.max_tokens} · 超时: ${p.timeout}秒
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateAgentProviderSelect() {
+            const select = document.getElementById('agentProvider');
+            select.innerHTML = '<option value="">使用默认提供商</option>' +
+                providers.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+        }
+        
+        function openProviderModal(id = null) {
+            document.getElementById('providerModalTitle').textContent = id ? '编辑提供商' : '添加大模型提供商';
+            document.getElementById('providerId').value = id || '';
+            
+            if (id) {
+                const p = providers.find(x => x.id === id);
+                if (p) {
+                    document.getElementById('providerName').value = p.name;
+                    document.getElementById('providerType').value = p.provider_type;
+                    document.getElementById('providerApiKey').value = '';
+                    document.getElementById('providerApiKey').placeholder = '••••••••••••••••••••';
+                    document.getElementById('providerBaseUrl').value = p.base_url || '';
+                    document.getElementById('providerModel').value = p.default_model;
+                    document.getElementById('providerTemp').value = p.temperature;
+                    document.getElementById('providerTokens').value = p.max_tokens;
+                    document.getElementById('providerTimeout').value = p.timeout;
+                    document.getElementById('providerIsDefault').checked = p.is_default;
+                }
+            } else {
+                document.getElementById('providerName').value = '';
+                document.getElementById('providerType').value = 'deepseek';
+                document.getElementById('providerApiKey').value = '';
+                document.getElementById('providerApiKey').placeholder = 'sk-...';
+                document.getElementById('providerBaseUrl').value = '';
+                document.getElementById('providerModel').value = '';
+                document.getElementById('providerTemp').value = '0.7';
+                document.getElementById('providerTokens').value = '500';
+                document.getElementById('providerTimeout').value = '30';
+                document.getElementById('providerIsDefault').checked = false;
+            }
+            
+            document.getElementById('providerModal').classList.add('show');
+        }
+        
+        function closeProviderModal() {
+            document.getElementById('providerModal').classList.remove('show');
+        }
+        
+        async function saveProvider() {
+            const id = document.getElementById('providerId').value;
+            const data = {
+                name: document.getElementById('providerName').value,
+                provider_type: document.getElementById('providerType').value,
+                api_key: document.getElementById('providerApiKey').value,
+                base_url: document.getElementById('providerBaseUrl').value,
+                default_model: document.getElementById('providerModel').value,
+                temperature: parseFloat(document.getElementById('providerTemp').value),
+                max_tokens: parseInt(document.getElementById('providerTokens').value),
+                timeout: parseInt(document.getElementById('providerTimeout').value),
+                is_default: document.getElementById('providerIsDefault').checked
+            };
+            
+            if (!data.name || !data.provider_type || !data.default_model) {
+                alert('请填写必填项');
+                return;
+            }
+            
+            try {
+                const url = id ? `${API_BASE}/llm-providers/${id}` : `${API_BASE}/llm-providers`;
+                const method = id ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    closeProviderModal();
+                    loadProviders();
+                    showMessage('providerMessage', '保存成功', 'success');
+                } else {
+                    const err = await res.json();
+                    alert('保存失败: ' + (err.detail || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+        
+        async function testProvider(id) {
+            try {
+                const res = await fetch(`${API_BASE}/llm-providers/${id}/test`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+            } catch (e) {
+                alert('测试失败: ' + e.message);
+            }
+        }
+        
+        async function setDefaultProvider(id) {
+            try {
+                await fetch(`${API_BASE}/llm-providers/${id}/set-default`, { method: 'POST' });
+                loadProviders();
+            } catch (e) {
+                alert('设置失败');
+            }
+        }
+        
+        function editProvider(id) {
+            openProviderModal(id);
+        }
+        
+        async function deleteProvider(id) {
+            if (!confirm('确定要删除此提供商吗？')) return;
+            try {
+                await fetch(`${API_BASE}/llm-providers/${id}`, { method: 'DELETE' });
+                loadProviders();
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        // ============ AI智能体管理 ============
+        async function loadAgents() {
+            try {
+                const res = await fetch(`${API_BASE}/agents`);
+                const data = await res.json();
+                agents = data.agents || [];
+                renderAgents();
+            } catch (e) {
+                console.error('加载智能体失败:', e);
+            }
+        }
+        
+        function renderAgents() {
+            const container = document.getElementById('agentList');
+            if (agents.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无智能体</div>';
+                return;
+            }
+            
+            container.innerHTML = agents.map(a => `
+                <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 10px; ${a.is_default ? 'border-color: #075e54; background: #f0f9f7;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 16px;">${escapeHtml(a.name)}</div>
+                            <div style="color: #666; font-size: 13px; margin-top: 4px;">${escapeHtml(a.description || '暂无描述')}</div>
+                            <div style="margin-top: 8px;">
+                                ${a.tags.map(t => `<span style="background: ${t.color}20; color: ${t.color}; border: 1px solid ${t.color}40; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 5px;">${escapeHtml(t.name)}</span>`).join('')}
+                                ${a.llm_provider ? `<span style="background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 5px;">${escapeHtml(a.llm_provider.name)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            ${!a.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultAgent(${a.id})">设为默认</button>` : ''}
+                            <button class="btn btn-sm btn-secondary" onclick="editAgent(${a.id})">编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAgent(${a.id})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function loadKnowledgeForAgent() {
+            const container = document.getElementById('agentKnowledgeCheckboxes');
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/documents`);
+                const data = await res.json();
+                const docs = data.documents || [];
+                if (docs.length === 0) {
+                    container.innerHTML = '<span style="color: #999; font-size: 14px;">暂无知识库文档，请先在“知识库”标签页上传</span>';
+                    return;
+                }
+                container.innerHTML = docs.map(d => `
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 12px; border-radius: 16px; background: #f0f9f7; border: 1px solid #075e5440; transition: all 0.2s;" onmouseover="this.style.background='#d4edea'" onmouseout="this.style.background='#f0f9f7'">
+                        <input type="checkbox" name="agentKb" value="${d.id}" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="color: #075e54; font-size: 14px;">\uD83D\uDCDA ${escapeHtml(d.title)}</span>
+                    </label>
+                `).join('');
+                // 回填待设置的知识库
+                const pendingIds = window._pendingKbIds || [];
+                container.querySelectorAll('input[name="agentKb"]').forEach(cb => {
+                    cb.checked = pendingIds.includes(parseInt(cb.value));
+                });
+            } catch (e) {
+                container.innerHTML = '<span style="color: #999;">加载失败</span>';
+            }
+        }
+        
+        async function loadTagsForAgent() {
+            try {
+                // 同时加载标签和所有智能体，以显示标签绑定状态
+                const [tagsRes, agentsRes] = await Promise.all([
+                    fetch(`${API_BASE}/customer-tags`),
+                    fetch(`${API_BASE}/agents`)
+                ]);
+                
+                const tagsData = await tagsRes.json();
+                const agentsData = await agentsRes.json();
+                
+                tags = tagsData.tags || [];
+                const allAgents = agentsData.agents || [];
+                
+                // 构建标签到智能体的映射
+                const tagToAgentMap = {};
+                allAgents.forEach(agent => {
+                    if (agent.tags) {
+                        agent.tags.forEach(tag => {
+                            tagToAgentMap[tag.id] = agent.name;
+                        });
+                    }
+                });
+                
+                const container = document.getElementById('agentTagCheckboxes');
+                if (tags.length === 0) {
+                    container.innerHTML = '<span style="color: #999; font-size: 14px;">暂无标签，请在"客户标签"标签页创建</span>';
+                    return;
+                }
+                
+                const currentAgentId = document.getElementById('agentId').value;
+                
+                container.innerHTML = tags.map(t => {
+                    const boundAgent = tagToAgentMap[t.id];
+                    const isBoundToOther = boundAgent && (!currentAgentId || !allAgents.find(a => a.id == currentAgentId && a.tags && a.tags.find(tag => tag.id == t.id)));
+                    
+                    return `
+                    <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 12px; border-radius: 16px; background: ${t.color}15; border: 1px solid ${t.color}40; transition: all 0.2s; ${isBoundToOther ? 'opacity: 0.6;' : ''}" onmouseover="this.style.background='${t.color}25'" onmouseout="this.style.background='${t.color}15'" title="${isBoundToOther ? '已绑定到智能体: ' + boundAgent : ''}">
+                        <input type="checkbox" name="agentTag" value="${t.id}" style="width: 16px; height: 16px; cursor: pointer;" ${isBoundToOther ? 'disabled' : ''}>
+                        <span style="color: ${t.color}; font-size: 14px; font-weight: 500;">${escapeHtml(t.name)}</span>
+                        ${isBoundToOther ? `<small style="color: #999; margin-left: 4px;">(${escapeHtml(boundAgent)})</small>` : ''}
+                    </label>
+                `}).join('');
+            } catch (e) {
+                console.error('加载标签失败:', e);
+            }
+        }
+        
+        function openAgentModal(id = null) {
+            document.getElementById('agentModalTitle').textContent = id ? '编辑智能体' : '新建智能体';
+            document.getElementById('agentId').value = id || '';
+            loadTagsForAgent();
+            loadKnowledgeForAgent();
+            
+            if (id) {
+                const a = agents.find(x => x.id === id);
+                if (a) {
+                    document.getElementById('agentName').value = a.name;
+                    document.getElementById('agentDesc').value = a.description || '';
+                    document.getElementById('agentPrompt').value = a.system_prompt;
+                    document.getElementById('agentProvider').value = a.llm_provider_id || '';
+                    document.getElementById('agentModelId').value = a.llm_model_id || '';
+                    document.getElementById('agentTemp').value = a.temperature || '';
+                    document.getElementById('agentTokens').value = a.max_tokens || '';
+                    document.getElementById('agentPriority').value = a.priority;
+                    document.getElementById('agentIsDefault').checked = a.is_default;
+                    
+                    // 设置标签
+                    const tagIds = a.tags.map(t => t.id);
+                    document.querySelectorAll('input[name="agentTag"]').forEach(cb => {
+                        cb.checked = tagIds.includes(parseInt(cb.value));
+                    });
+                    
+                    // 设置知识库（异步回填，等 loadKnowledgeForAgent 完成后再设置）
+                    window._pendingKbIds = a.knowledge_doc_ids || [];
+                }
+            } else {
+                document.getElementById('agentName').value = '';
+                document.getElementById('agentDesc').value = '';
+                document.getElementById('agentPrompt').value = '';
+                document.getElementById('agentProvider').value = '';
+                document.getElementById('agentModelId').value = '';
+                document.getElementById('agentTemp').value = '';
+                document.getElementById('agentTokens').value = '';
+                document.getElementById('agentPriority').value = '0';
+                document.getElementById('agentIsDefault').checked = false;
+                window._pendingKbIds = [];
+            }
+            
+            // 关闭优化结果区域
+            closeOptimizeResult();
+            
+            document.getElementById('agentModal').classList.add('show');
+        }
+        
+        function closeAgentModal() {
+            document.getElementById('agentModal').classList.remove('show');
+        }
+        
+        // 提示词优化功能
+        let currentOptimizedPrompt = '';
+        
+        async function optimizePrompt() {
+            const promptTextarea = document.getElementById('agentPrompt');
+            const prompt = promptTextarea.value.trim();
+            
+            if (!prompt || prompt.length < 10) {
+                alert('提示词太短，至少需要10个字符才能优化');
+                return;
+            }
+            
+            const optimizeBtn = document.getElementById('optimizeBtn');
+            const originalText = optimizeBtn.textContent;
+            optimizeBtn.textContent = '优化中...';
+            optimizeBtn.disabled = true;
+            
+            // 获取选择的提供商
+            const providerId = document.getElementById('agentProvider').value;
+            
+            try {
+                const res = await fetch(`${API_BASE}/prompts/optimize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: prompt,
+                        provider_id: providerId ? parseInt(providerId) : null
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    currentOptimizedPrompt = data.optimized_prompt;
+                    document.getElementById('optimizedContent').textContent = data.optimized_prompt;
+                    document.getElementById('optimizeResult').style.display = 'block';
+                    
+                    // 滚动到优化结果
+                    document.getElementById('optimizeResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    alert('优化失败: ' + data.message);
+                }
+            } catch (e) {
+                alert('优化失败: ' + e.message);
+            } finally {
+                optimizeBtn.textContent = originalText;
+                optimizeBtn.disabled = false;
+            }
+        }
+        
+        function applyOptimizedPrompt() {
+            if (currentOptimizedPrompt) {
+                // 提取【优化后的提示词】部分
+                const match = currentOptimizedPrompt.match(/【优化后的提示词】\s*\n?([\s\S]*?)(?=【优化说明】|$)/);
+                if (match) {
+                    document.getElementById('agentPrompt').value = match[1].trim();
+                } else {
+                    // 如果没有匹配到格式，使用全部内容
+                    document.getElementById('agentPrompt').value = currentOptimizedPrompt.trim();
+                }
+                closeOptimizeResult();
+            }
+        }
+        
+        function closeOptimizeResult() {
+            document.getElementById('optimizeResult').style.display = 'none';
+            currentOptimizedPrompt = '';
+        }
+        
+        async function saveAgent() {
+            const id = document.getElementById('agentId').value;
+            const tagCheckboxes = document.querySelectorAll('input[name="agentTag"]:checked');
+            const kbCheckboxes = document.querySelectorAll('input[name="agentKb"]:checked');
+            
+            const data = {
+                name: document.getElementById('agentName').value,
+                description: document.getElementById('agentDesc').value,
+                system_prompt: document.getElementById('agentPrompt').value,
+                llm_provider_id: document.getElementById('agentProvider').value || null,
+                llm_model_id: document.getElementById('agentModelId').value || null,
+                temperature: document.getElementById('agentTemp').value ? parseFloat(document.getElementById('agentTemp').value) : null,
+                max_tokens: document.getElementById('agentTokens').value ? parseInt(document.getElementById('agentTokens').value) : null,
+                priority: parseInt(document.getElementById('agentPriority').value),
+                is_default: document.getElementById('agentIsDefault').checked,
+                tag_ids: Array.from(tagCheckboxes).map(cb => parseInt(cb.value)),
+                knowledge_doc_ids: Array.from(kbCheckboxes).map(cb => parseInt(cb.value))
+            };
+            
+            if (!data.name || !data.system_prompt) {
+                alert('请填写必填项');
+                return;
+            }
+            
+            try {
+                const url = id ? `${API_BASE}/agents/${id}` : `${API_BASE}/agents`;
+                const method = id ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    closeAgentModal();
+                    loadAgents();
+                    showMessage('agentMessage', '保存成功', 'success');
+                } else {
+                    const err = await res.json();
+                    alert('保存失败: ' + (err.detail || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+        
+        async function setDefaultAgent(id) {
+            try {
+                await fetch(`${API_BASE}/agents/${id}/set-default`, { method: 'POST' });
+                loadAgents();
+            } catch (e) {
+                alert('设置失败');
+            }
+        }
+        
+        function editAgent(id) {
+            openAgentModal(id);
+        }
+        
+        async function deleteAgent(id) {
+            if (!confirm('确定要删除此智能体吗？')) return;
+            try {
+                await fetch(`${API_BASE}/agents/${id}`, { method: 'DELETE' });
+                loadAgents();
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        // ============ 客户标签管理 ============
+        async function loadTags() {
+            try {
+                const res = await fetch(`${API_BASE}/customer-tags`);
+                const data = await res.json();
+                tags = data.tags || [];
+                renderTags();
+            } catch (e) {
+                console.error('加载标签失败:', e);
+            }
+        }
+        
+        function renderTags() {
+            const container = document.getElementById('tagList');
+            if (tags.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无标签</div>';
+                return;
+            }
+            
+            container.innerHTML = tags.map(t => `
+                <div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 20px; margin: 5px; background: ${t.color}20; color: ${t.color}; border: 1px solid ${t.color}40;">
+                    <span style="font-weight: 500;">${escapeHtml(t.name)}</span>
+                    <button style="background: ${t.color}; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 11px;" onclick="editTag(${t.id})">✎</button>
+                    <button style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 11px;" onclick="deleteTag(${t.id})">✕</button>
+                </div>
+            `).join('');
+        }
+        
+        function openTagModal(id = null) {
+            document.getElementById('tagModalTitle').textContent = id ? '编辑标签' : '新建标签';
+            document.getElementById('tagId').value = id || '';
+            
+            if (id) {
+                const t = tags.find(x => x.id === id);
+                if (t) {
+                    document.getElementById('tagName').value = t.name;
+                    document.getElementById('tagColor').value = t.color;
+                    document.getElementById('tagDesc').value = t.description || '';
+                }
+            } else {
+                document.getElementById('tagName').value = '';
+                document.getElementById('tagColor').value = '#007bff';
+                document.getElementById('tagDesc').value = '';
+            }
+            
+            document.getElementById('tagModal').classList.add('show');
+        }
+        
+        function closeTagModal() {
+            document.getElementById('tagModal').classList.remove('show');
+        }
+        
+        async function saveTag() {
+            const id = document.getElementById('tagId').value;
+            const data = {
+                name: document.getElementById('tagName').value,
+                color: document.getElementById('tagColor').value,
+                description: document.getElementById('tagDesc').value
+            };
+            
+            if (!data.name) {
+                alert('请输入标签名称');
+                return;
+            }
+            
+            try {
+                const url = id ? `${API_BASE}/customer-tags/${id}` : `${API_BASE}/customer-tags`;
+                const method = id ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    closeTagModal();
+                    loadTags();
+                    showMessage('tagMessage', '保存成功', 'success');
+                } else {
+                    const err = await res.json();
+                    alert('保存失败: ' + (err.detail || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            }
+        }
+        
+        function editTag(id) {
+            openTagModal(id);
+        }
+        
+        async function deleteTag(id) {
+            if (!confirm('确定要删除此标签吗？')) return;
+            try {
+                await fetch(`${API_BASE}/customer-tags/${id}`, { method: 'DELETE' });
+                loadTags();
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+        
+        // 工具函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== 联系人导入功能 =====
+
+        let _importParsedData = [];   // 已解析的联系人列表
+        let _selectedImportTagIds = new Set();  // 选中的标签 ID
+
+        function switchImportTab(tab) {
+            if (tab === 'csv') {
+                document.getElementById('importPanelCSV').style.display = 'block';
+                document.getElementById('importPanelManual').style.display = 'none';
+                document.getElementById('importTabCSV').style.color = '#075e54';
+                document.getElementById('importTabCSV').style.borderBottomColor = '#075e54';
+                document.getElementById('importTabManual').style.color = '#999';
+                document.getElementById('importTabManual').style.borderBottomColor = 'transparent';
+            } else {
+                document.getElementById('importPanelCSV').style.display = 'none';
+                document.getElementById('importPanelManual').style.display = 'block';
+                document.getElementById('importTabCSV').style.color = '#999';
+                document.getElementById('importTabCSV').style.borderBottomColor = 'transparent';
+                document.getElementById('importTabManual').style.color = '#075e54';
+                document.getElementById('importTabManual').style.borderBottomColor = '#075e54';
+            }
+        }
+
+        // 加载导入页标签列表
+        async function loadImportTags() {
+            try {
+                const res = await fetch('/api/customer-tags');
+                const data = await res.json();
+                const container = document.getElementById('importTagSelector');
+                if (!data.tags || data.tags.length === 0) {
+                    container.innerHTML = '<span style="color:#aaa; font-size:13px; line-height:24px;">暂无标签，可在「客户标签」页创建</span>';
+                    return;
+                }
+                container.innerHTML = '';
+                data.tags.forEach(tag => {
+                    const chip = document.createElement('div');
+                    chip.style.cssText = 'display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:12px; border:2px solid transparent; cursor:pointer; font-size:13px; transition:all 0.15s;';
+                    chip.style.background = tag.color + '22';
+                    chip.style.borderColor = tag.color + '44';
+                    chip.style.color = tag.color;
+                    chip.dataset.tagId = tag.id;
+                    chip.innerHTML = escapeHtml(tag.name);
+                    chip.onclick = () => {
+                        if (_selectedImportTagIds.has(tag.id)) {
+                            _selectedImportTagIds.delete(tag.id);
+                            chip.style.borderColor = tag.color + '44';
+                            chip.style.background = tag.color + '22';
+                        } else {
+                            _selectedImportTagIds.add(tag.id);
+                            chip.style.borderColor = tag.color;
+                            chip.style.background = tag.color + '33';
+                            chip.style.boxShadow = '0 0 0 2px ' + tag.color + '55';
+                        }
+                    };
+                    container.appendChild(chip);
+                });
+            } catch(e) {
+                document.getElementById('importTagSelector').innerHTML = '<span style="color:#e53935; font-size:13px;">加载标签失败</span>';
+            }
+        }
+
+        // 处理 CSV 文件拖拽
+        function handleCSVDrop(event) {
+            event.preventDefault();
+            document.getElementById('csvDropZone').style.borderColor = '#ddd';
+            const file = event.dataTransfer.files[0];
+            if (file) handleCSVFile(file);
+        }
+
+        // 解析 CSV 文件
+        function handleCSVFile(file) {
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showImportMsg('请上传 .csv 文件', 'error');
+                return;
+            }
+            document.getElementById('csvDropZone').style.borderColor = '#075e54';
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSVText(text);
+            };
+            // 尝试常见编码
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseCSVText(text) {
+            // 移除 BOM
+            if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            const result = [];
+            let skipHeader = false;
+            lines.forEach((line, idx) => {
+                const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                const phone = cols[0] || '';
+                const name = cols[1] || '';
+                const note = cols[2] || '';
+                // 跳过表头（如果第一列包含中文或非数字）
+                if (idx === 0 && /[\u4e00-\u9fff手机]/.test(phone)) return;
+                if (!phone) return;
+                // 清理手机号
+                const cleanPhone = phone.replace(/[^0-9+]/g, '').replace(/^\+/, '');
+                if (cleanPhone.length >= 7) {
+                    result.push({ phone: cleanPhone, name, note });
+                }
+            });
+            _importParsedData = result;
+            updateImportPreview();
+            const infoEl = document.getElementById('csvParseInfo');
+            infoEl.style.display = 'block';
+            infoEl.innerHTML = `解析完成：共 <b>${lines.length}</b> 行，有效 <b style="color:#075e54">${result.length}</b> 条记录`;
+        }
+
+        // 解析手动输入
+        function parseManualInput() {
+            const text = document.getElementById('manualInput').value;
+            const lines = text.split('\n').filter(l => l.trim());
+            const result = [];
+            lines.forEach(line => {
+                const cols = line.split(',').map(c => c.trim());
+                const phone = cols[0] || '';
+                const name = cols[1] || '';
+                const note = cols[2] || '';
+                const cleanPhone = phone.replace(/[^0-9+]/g, '').replace(/^\+/, '');
+                if (cleanPhone.length >= 7) {
+                    result.push({ phone: cleanPhone, name, note });
+                }
+            });
+            _importParsedData = result;
+            updateImportPreview();
+            const infoEl = document.getElementById('manualParseInfo');
+            infoEl.innerHTML = `已解析 <b style="color:#075e54">${result.length}</b> 条有效记录`;
+        }
+
+        // 更新预览
+        function updateImportPreview() {
+            const area = document.getElementById('importPreviewArea');
+            const tbody = document.getElementById('importPreviewBody');
+            const countEl = document.getElementById('previewCount');
+            const btn = document.getElementById('doImportBtn');
+
+            if (_importParsedData.length === 0) {
+                area.style.display = 'none';
+                btn.disabled = true;
+                return;
+            }
+            area.style.display = 'block';
+            btn.disabled = false;
+            countEl.textContent = _importParsedData.length;
+
+            // 只显示前 50 条预览
+            const previewData = _importParsedData.slice(0, 50);
+            tbody.innerHTML = previewData.map(item => `
+                <tr style="border-top: 1px solid #f0f0f0;">
+                    <td style="padding: 7px 12px; font-family: monospace; font-size: 12px;">${escapeHtml(item.phone)}</td>
+                    <td style="padding: 7px 12px;">${escapeHtml(item.name || '-')}</td>
+                    <td style="padding: 7px 12px; color: #999;">${escapeHtml(item.note || '-')}</td>
+                </tr>
+            `).join('');
+            if (_importParsedData.length > 50) {
+                tbody.innerHTML += `<tr><td colspan="3" style="padding: 8px 12px; color: #aaa; font-size: 12px; text-align:center">仅预览前 50 条，实际导入 ${_importParsedData.length} 条</td></tr>`;
+            }
+        }
+
+        // 执行导入
+        async function doImport() {
+            if (_importParsedData.length === 0) {
+                showImportMsg('请先上传 CSV 文件或输入联系人数据', 'error');
+                return;
+            }
+            const strategy = document.getElementById('duplicateStrategy').value;
+            const tagIds = Array.from(_selectedImportTagIds);
+            const btn = document.getElementById('doImportBtn');
+            btn.disabled = true;
+            btn.textContent = '导入中...';
+            document.getElementById('importResult').style.display = 'none';
+            try {
+                const res = await fetch('/api/customers/batch-import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customers: _importParsedData,
+                        tag_ids: tagIds,
+                        duplicate_strategy: strategy
+                    })
+                });
+                const data = await res.json();
+                showImportResult(data);
+            } catch(e) {
+                showImportMsg('导入请求失败：' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '导入联系人';
+            }
+        }
+
+        function showImportResult(data) {
+            const el = document.getElementById('importResult');
+            if (!data.success) {
+                el.style.background = '#ffebee';
+                el.style.borderColor = '#ef9a9a';
+                el.innerHTML = `<b style="color:#c62828">导入失败</b>`;
+                el.style.display = 'block';
+                return;
+            }
+            const parts = [];
+            if (data.imported_count > 0) parts.push(`<span style="color:#2e7d32">✅ 新建 ${data.imported_count} 个客户</span>`);
+            if (data.updated_count > 0) parts.push(`<span style="color:#1565c0">✏️ 更新 ${data.updated_count} 个客户</span>`);
+            if (data.skipped_count > 0) parts.push(`<span style="color:#f57c00">⏭️ 跳过 ${data.skipped_count} 个（重复）</span>`);
+            if (data.failed_count > 0) parts.push(`<span style="color:#c62828">❌ 失败 ${data.failed_count} 个（格式错误）</span>`);
+            el.style.background = '#e8f5e9';
+            el.style.borderColor = '#a5d6a7';
+            el.innerHTML = `<b>导入完成！</b>&nbsp;&nbsp;` + parts.join('&nbsp;&nbsp;');
+            if (data.failed && data.failed.length > 0) {
+                el.innerHTML += `<div style="margin-top:8px; font-size:12px; color:#c62828;">格式错误记录：` +
+                    data.failed.slice(0, 5).map(f => `${f.phone}(${f.reason})`).join('、') +
+                    (data.failed.length > 5 ? ` 等${data.failed.length}条` : '') + '</div>';
+            }
+            el.style.display = 'block';
+            // 导入成功后重置数据
+            _importParsedData = [];
+            updateImportPreview();
+            document.getElementById('csvParseInfo').style.display = 'none';
+            document.getElementById('manualInput').value = '';
+            document.getElementById('manualParseInfo').innerHTML = '';
+            document.getElementById('csvDropZone').style.borderColor = '#ddd';
+            document.getElementById('csvFileInput').value = '';
+        }
+
+        function showImportMsg(msg, type) {
+            const el = document.getElementById('importMessage');
+            el.style.display = 'block';
+            el.style.background = type === 'error' ? '#ffebee' : '#e8f5e9';
+            el.style.color = type === 'error' ? '#c62828' : '#2e7d32';
+            el.style.border = type === 'error' ? '1px solid #ef9a9a' : '1px solid #a5d6a7';
+            el.style.padding = '10px 14px';
+            el.style.borderRadius = '6px';
+            el.style.marginBottom = '16px';
+            el.textContent = msg;
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        // ===== 管理员通知功能 =====
+
+        function loadNotifyTab() {
+            loadAdmins();
+            loadNotifyRules();
+        }
+
+        // 管理员列表
+        async function loadAdmins() {
+            try {
+                const res = await fetch('/api/notify/admins');
+                const data = await res.json();
+                const el = document.getElementById('adminList');
+                if (!data.admins || data.admins.length === 0) {
+                    el.innerHTML = '<div class="empty-state">暂无管理员，点击「添加管理员」开始</div>';
+                    return;
+                }
+                el.innerHTML = data.admins.map(a => `
+                    <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f0f0f0;">
+                        <div style="width:40px; height:40px; background:#075e5420; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">👤</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:14px;">${escapeHtml(a.name)}</div>
+                            <div style="font-size:12px; color:#888; margin-top:2px;">+${escapeHtml(a.phone)}</div>
+                        </div>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#555;">
+                            <input type="checkbox" ${a.enabled ? 'checked' : ''} onchange="toggleAdmin(${a.id}, this.checked)" style="width:16px;height:16px;">
+                            启用
+                        </label>
+                        <button class="btn btn-danger btn-small" onclick="deleteAdmin(${a.id})">删除</button>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('adminList').innerHTML = '<div class="empty-state" style="color:#e53935">加载失败</div>';
+            }
+        }
+
+        async function toggleAdmin(id, enabled) {
+            await fetch(`/api/notify/admins/${id}`, {
+                method: 'PUT', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ enabled })
+            });
+        }
+
+        async function deleteAdmin(id) {
+            if (!confirm('确定要删除该管理员？')) return;
+            await fetch(`/api/notify/admins/${id}`, { method: 'DELETE' });
+            loadAdmins();
+        }
+
+        function openAddAdminModal() {
+            document.getElementById('addAdminModal').classList.add('show');
+        }
+
+        function closeAddAdminModal() {
+            document.getElementById('addAdminModal').classList.remove('show');
+            document.getElementById('newAdminName').value = '';
+            document.getElementById('newAdminPhone').value = '';
+        }
+
+        async function saveAdmin() {
+            const name = document.getElementById('newAdminName').value.trim();
+            const phone = document.getElementById('newAdminPhone').value.trim();
+            if (!phone) { alert('请输入手机号'); return; }
+            try {
+                const res = await fetch('/api/notify/admins', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ name: name || phone, phone })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeAddAdminModal();
+                    loadAdmins();
+                    showNotifyMsg('notifyAdminMsg', '管理员已添加', 'success');
+                } else {
+                    alert(data.detail || '添加失败');
+                }
+            } catch(e) { alert('添加失败: ' + e.message); }
+        }
+
+        // 通知规则列表
+        async function loadNotifyRules() {
+            try {
+                const res = await fetch('/api/notify/rules');
+                const data = await res.json();
+                const el = document.getElementById('notifyRuleList');
+                if (!data.rules || data.rules.length === 0) {
+                    el.innerHTML = '<div class="empty-state">暂无规则</div>';
+                    return;
+                }
+                const builtinIds = new Set(['first_message','price_inquiry','purchase_intent','daily_report']);
+                el.innerHTML = data.rules.map(rule => {
+                    const isBuiltin = builtinIds.has(rule.id);
+                    const eventIcon = rule.event_type === 'daily_report' ? '📊' :
+                                      rule.event_type === 'first_message' ? '📩' : '🔑';
+                    const kws = rule.keywords && rule.keywords.length > 0
+                        ? `<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">
+                            ${rule.keywords.slice(0,8).map(k => `<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;">${escapeHtml(k)}</span>`).join('')}
+                            ${rule.keywords.length > 8 ? `<span style="color:#aaa;font-size:11px;">+${rule.keywords.length-8}</span>` : ''}
+                           </div>` : '';
+                    const reportTime = rule.report_time ? `<span style="font-size:12px;color:#888;"> (每天 ${rule.report_time} 发送)</span>` : '';
+                    return `
+                    <div style="display:flex; align-items:flex-start; gap:12px; padding:14px 0; border-bottom:1px solid #f0f0f0;">
+                        <div style="width:40px; height:40px; background:#f0f9f7; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">${eventIcon}</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:14px; color:#222;">${escapeHtml(rule.name)}${reportTime} ${isBuiltin ? '<span style="font-size:11px;color:#aaa;background:#f5f5f5;padding:1px 6px;border-radius:4px;margin-left:4px">内置</span>' : ''}</div>
+                            <div style="font-size:12px; color:#888; margin-top:3px;">${escapeHtml(rule.description || '')}</div>
+                            ${kws}
+                        </div>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#555; white-space:nowrap; flex-shrink:0;">
+                            <input type="checkbox" ${rule.enabled ? 'checked' : ''} onchange="toggleRule('${rule.id}', this.checked)" style="width:16px;height:16px;">
+                            启用
+                        </label>
+                        ${!isBuiltin ? `<button class="btn btn-danger btn-small" onclick="deleteRule('${rule.id}')">删除</button>` : ''}
+                    </div>`;
+                }).join('');
+            } catch(e) {
+                document.getElementById('notifyRuleList').innerHTML = '<div class="empty-state" style="color:#e53935">加载失败</div>';
+            }
+        }
+
+        async function toggleRule(id, enabled) {
+            await fetch(`/api/notify/rules/${id}`, {
+                method: 'PUT', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ enabled })
+            });
+        }
+
+        async function deleteRule(id) {
+            if (!confirm('确定删除此规则？')) return;
+            const res = await fetch(`/api/notify/rules/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) { loadNotifyRules(); }
+            else { alert(data.detail || '删除失败'); }
+        }
+
+        function openAddRuleModal() {
+            document.getElementById('addRuleModal').classList.add('show');
+        }
+
+        function closeAddRuleModal() {
+            document.getElementById('addRuleModal').classList.remove('show');
+            document.getElementById('newRuleName').value = '';
+            document.getElementById('newRuleDesc').value = '';
+            document.getElementById('newRuleKeywords').value = '';
+        }
+
+        async function saveCustomRule() {
+            const name = document.getElementById('newRuleName').value.trim();
+            const desc = document.getElementById('newRuleDesc').value.trim();
+            const kwRaw = document.getElementById('newRuleKeywords').value.trim();
+            if (!name || !kwRaw) { alert('请填写规则名称和关键词'); return; }
+            const keywords = kwRaw.split(/[,，\n]+/).map(k => k.trim()).filter(Boolean);
+            const rule_id = 'custom_' + Date.now();
+            try {
+                const res = await fetch('/api/notify/rules', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ rule_id, name, description: desc, keywords })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeAddRuleModal();
+                    loadNotifyRules();
+                    showNotifyMsg('notifyRuleMsg', '自定义规则已添加', 'success');
+                } else {
+                    alert(data.detail || '添加失败');
+                }
+            } catch(e) { alert('添加失败: ' + e.message); }
+        }
+
+        async function testNotify() {
+            const res = await fetch('/api/notify/test', { method: 'POST' });
+            const data = await res.json();
+            showNotifyMsg('notifyAdminMsg', data.message, data.success ? 'success' : 'error');
+        }
+
+        function showNotifyMsg(id, msg, type) {
+            const el = document.getElementById(id);
+            el.style.display = 'block';
+            el.style.background = type === 'error' ? '#ffebee' : '#e8f5e9';
+            el.style.color = type === 'error' ? '#c62828' : '#2e7d32';
+            el.style.border = type === 'error' ? '1px solid #ef9a9a' : '1px solid #a5d6a7';
+            el.style.padding = '10px 14px';
+            el.style.borderRadius = '6px';
+            el.style.marginBottom = '10px';
+            el.textContent = msg;
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+    </script>
+
+    <!-- 添加管理员弹窗 -->
+    <div class="modal" id="addAdminModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>添加管理员</h3>
+                <button class="close-btn" onclick="closeAddAdminModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>姓名（可留空）</label>
+                <input type="text" id="newAdminName" placeholder="如：段总、小王">
+            </div>
+            <div class="form-group">
+                <label>手机号（含国家区号，如 8613800138000）</label>
+                <input type="text" id="newAdminPhone" placeholder="8613800138000">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddAdminModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveAdmin()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建自定义规则弹窗 -->
+    <div class="modal" id="addRuleModal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>新建自定义关键词规则</h3>
+                <button class="close-btn" onclick="closeAddRuleModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>规则名称</label>
+                <input type="text" id="newRuleName" placeholder="如：询问释放计划">
+            </div>
+            <div class="form-group">
+                <label>说明（可留空）</label>
+                <input type="text" id="newRuleDesc" placeholder="规则用途说明">
+            </div>
+            <div class="form-group">
+                <label>关键词（每行一个，或用逗号分隔）</label>
+                <textarea id="newRuleKeywords" rows="4" placeholder="释放
+幺九
+计划
+专案"></textarea>
+                <div style="font-size: 12px; color: #aaa; margin-top: 4px;">消息中包含任意一个关键词就会触发通知</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddRuleModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveCustomRule()">保存</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
