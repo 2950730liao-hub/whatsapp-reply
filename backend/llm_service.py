@@ -478,6 +478,75 @@ class LLMService:
                 return {"intent": "未知", "urgency": "中", "keywords": []}
         
         return {"intent": "未知", "urgency": "中", "keywords": []}
+    
+    def analyze_document(self, content: str) -> dict:
+        """
+        使用 AI 分析知识库文档内容，自动生成分类、摘要和关键词。
+        返回: {"category": str, "summary": str, "keywords": List[str]}
+        """
+        self._maybe_refresh_config()
+        
+        # 截取前 3000 字作为分析内容（避免过长）
+        analysis_content = content[:3000]
+        
+        prompt = f"""请分析以下文档内容，输出结构化信息：
+
+文档内容：
+{analysis_content}
+
+请严格按照以下 JSON 格式输出（不要有任何额外文字）：
+{{
+    "category": "文档分类，只能是以下之一：general(通用), product(产品), service(服务), faq(常见问题)",
+    "summary": "100字以内的中文摘要",
+    "keywords": ["关键词1", "关键词2", "关键词3", "关键词4", "关键词5"]
+}}
+"""
+        
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 600
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            with httpx.Client(timeout=30) as client:
+                url = f"{self.base_url.rstrip('/')}/chat/completions"
+                resp = client.post(url, json=payload, headers=headers)
+                
+                if resp.status_code == 200:
+                    result = resp.json()
+                    raw_content = result["choices"][0]["message"]["content"]
+                    
+                    # 解析 JSON
+                    import json
+                    import re
+                    
+                    # 尝试从回复中提取 JSON
+                    json_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
+                    if json_match:
+                        data = json.loads(json_match.group())
+                        return {
+                            "category": data.get("category", "general"),
+                            "summary": data.get("summary", "")[:200],
+                            "keywords": data.get("keywords", [])[:10]
+                        }
+        except Exception as e:
+            logger.error(f"文档 AI 分析失败: {e}")
+        
+        # 失败时返回默认值
+        return {
+            "category": "general",
+            "summary": content[:100] + "..." if len(content) > 100 else content,
+            "keywords": []
+        }
 
 
 # 全局实例

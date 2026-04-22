@@ -518,7 +518,75 @@
                 
                 <div class="message" id="kbMessage"></div>
                 
-                <button class="btn btn-primary" id="addDocBtn">+ 添加文档</button>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <button class="btn btn-primary" id="addDocBtn">+ 添加文档</button>
+                    <button class="btn btn-success" id="smartImportBtn">🤖 智能导入</button>
+                </div>
+                
+                <!-- 智能导入模态框 -->
+                <div class="modal" id="smartImportModal" style="display: none;">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h3>🤖 智能导入知识库</h3>
+                            <button class="close-btn" onclick="closeSmartImportModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <!-- Tab 切换 -->
+                            <div style="display: flex; gap: 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 16px;">
+                                <button id="smartImportTabFile" onclick="switchSmartImportTab('file')" style="flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #075e54; border-bottom: 2px solid #075e54; margin-bottom: -2px;">📁 文件上传</button>
+                                <button id="smartImportTabText" onclick="switchSmartImportTab('text')" style="flex: 1; padding: 10px; border: none; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #999; border-bottom: 2px solid transparent; margin-bottom: -2px;">✏️ 粘贴文本</button>
+                            </div>
+                            
+                            <!-- 文件上传面板 -->
+                            <div id="smartImportPanelFile">
+                                <div style="font-size: 13px; color: #666; margin-bottom: 16px;">
+                                    上传 PDF、图片或文本文件，AI 将自动提取内容、分类并建立索引。
+                                </div>
+                                
+                                <!-- 拖拽上传区域 -->
+                                <div id="smartImportDropZone" style="border: 2px dashed #075e54; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; background: #f0f9f7; transition: background 0.2s; margin-bottom: 16px;" onclick="document.getElementById('smartImportInput').click()" ondragover="event.preventDefault(); this.style.background='#d4edea'" ondragleave="this.style.background='#f0f9f7'" ondrop="handleSmartImportDrop(event)">
+                                    <div style="font-size: 32px; margin-bottom: 8px;">📁</div>
+                                    <div style="font-size: 15px; color: #075e54; font-weight: 600;">点击或拖放文件到此处</div>
+                                    <div style="font-size: 12px; color: #999; margin-top: 6px;">支持: PDF, JPG, PNG, GIF, DOCX, TXT &nbsp;·&nbsp; 最大 50MB</div>
+                                    <input type="file" id="smartImportInput" style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.docx,.doc,.txt,.md,.csv" multiple onchange="handleSmartImportSelect(this)">
+                                </div>
+                            </div>
+                            
+                            <!-- 粘贴文本面板 -->
+                            <div id="smartImportPanelText" style="display: none;">
+                                <div style="font-size: 13px; color: #666; margin-bottom: 12px;">
+                                    粘贴碎片化知识内容，AI 将自动分析、分类并建立索引。
+                                </div>
+                                <div class="form-group">
+                                    <label>标题 <small style="color: #999;">(可选，留空将自动生成)</small></label>
+                                    <input type="text" id="smartImportTextTitle" placeholder="输入标题..." style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                                </div>
+                                <div class="form-group">
+                                    <label>内容 *</label>
+                                    <textarea id="smartImportTextContent" rows="8" placeholder="在此粘贴知识内容..." style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                                </div>
+                                <button class="btn btn-primary" onclick="processSmartImportText()" style="width: 100%;">🤖 AI 分析并保存</button>
+                            </div>
+                            
+                            <!-- 处理进度 -->
+                            <div id="smartImportProgress" style="display: none;">
+                                <div style="background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden;">
+                                    <div id="smartImportProgressBar" style="width: 0%; height: 100%; background: #075e54; transition: width 0.3s;"></div>
+                                </div>
+                                <div id="smartImportProgressText" style="font-size: 13px; color: #666; margin-top: 6px; text-align: center;">准备中...</div>
+                            </div>
+                            
+                            <!-- 处理结果 -->
+                            <div id="smartImportResults" style="display: none; margin-top: 16px;">
+                                <h4 style="font-size: 14px; color: #333; margin-bottom: 10px;">处理结果</h4>
+                                <div id="smartImportResultsList" style="max-height: 300px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeSmartImportModal()">关闭</button>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="doc-list" id="docList">
                     <div class="empty-state">暂无文档</div>
@@ -1217,8 +1285,29 @@
                         const typeIcon = isImage ? '🖼️' : isPdf ? '📎' : isWord ? '📝' : '📜';
                         const typeLabel = isImage ? '图片' : isPdf ? 'PDF' : isWord ? 'Word' : '文字';
                         
+                        // AI 分析信息展示
+                        const hasAiSummary = d.content && d.content.includes('[AI摘要]');
+                        const hasAiKeywords = d.content && d.content.includes('[关键词]');
+                        let aiSummaryText = '';
+                        let aiKeywordsText = '';
+                        
+                        if (d.content) {
+                            const summaryMatch = d.content.match(/\[AI摘要\]\s*(.+?)(?:\n|$)/);
+                            if (summaryMatch) aiSummaryText = summaryMatch[1].trim();
+                            const keywordsMatch = d.content.match(/\[关键词\]\s*(.+?)(?:\n|$)/);
+                            if (keywordsMatch) aiKeywordsText = keywordsMatch[1].trim();
+                        }
+                        
+                        const categoryMap = {
+                            'general': '通用',
+                            'product': '产品',
+                            'service': '服务',
+                            'faq': '常见问题'
+                        };
+                        const catLabel = categoryMap[d.category] || d.category;
+                        
                         return `
-                        <div class="doc-item" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-bottom: 1px solid #f0f0f0;">
+                        <div class="doc-item" style="display: flex; align-items: flex-start; gap: 14px; padding: 14px; border-bottom: 1px solid #f0f0f0;">
                             ${ isImage && d.file_url
                                 ? `<img src="${d.file_url}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 6px; flex-shrink: 0; border: 1px solid #e0e0e0;">`
                                 : `<div style="width: 56px; height: 56px; background: #f0f9f7; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;">${typeIcon}</div>`
@@ -1227,10 +1316,13 @@
                                 <div style="font-weight: 600; font-size: 14px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(d.title)}</div>
                                 <div style="font-size: 12px; color: #888; margin-top: 3px;">
                                     <span style="background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 4px; font-size: 11px;">${typeLabel}</span>
-                                    &nbsp;${escapeHtml(d.category)} &middot; ${new Date(d.created_at).toLocaleDateString()}
+                                    <span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 4px; font-size: 11px; margin-left: 4px;">${catLabel}</span>
+                                    &nbsp;${new Date(d.created_at).toLocaleDateString()}
                                 </div>
+                                ${aiSummaryText ? `<div style="font-size: 12px; color: #666; margin-top: 5px; line-height: 1.4;"><span style="color: #075e54; font-weight: 500;">AI摘要:</span> ${escapeHtml(aiSummaryText.substring(0, 100))}${aiSummaryText.length > 100 ? '...' : ''}</div>` : ''}
+                                ${aiKeywordsText ? `<div style="font-size: 11px; color: #075e54; margin-top: 3px;"><span style="font-weight: 500;">关键词:</span> ${escapeHtml(aiKeywordsText)}</div>` : ''}
                             </div>
-                            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <div style="display: flex; gap: 6px; flex-shrink: 0; margin-top: 4px;">
                                 ${ d.file_url ? `<button class="btn btn-secondary btn-small" onclick="copyFileUrl('${d.file_url}')">&#128279; 复制链接</button>` : '' }
                                 <button class="btn btn-secondary btn-small" onclick="editDocument(${d.id}, '${d.type || 'text'}')">✏️ 编辑</button>
                                 <button class="btn btn-danger btn-small" onclick="deleteDocument(${d.id})">删除</button>
@@ -1253,6 +1345,254 @@
                 const docModal = document.getElementById('docModal');
                 if (docModal) docModal.classList.add('show');
             });
+        }
+        
+        // 智能导入按钮
+        const smartImportBtn = document.getElementById('smartImportBtn');
+        if (smartImportBtn) {
+            smartImportBtn.addEventListener('click', () => {
+                const modal = document.getElementById('smartImportModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    // 重置状态
+                    document.getElementById('smartImportProgress').style.display = 'none';
+                    document.getElementById('smartImportResults').style.display = 'none';
+                    document.getElementById('smartImportDropZone').style.display = '';
+                }
+            });
+        }
+        
+        function closeSmartImportModal() {
+            const modal = document.getElementById('smartImportModal');
+            if (modal) modal.style.display = 'none';
+            // 重置文本输入
+            const titleInput = document.getElementById('smartImportTextTitle');
+            const contentInput = document.getElementById('smartImportTextContent');
+            if (titleInput) titleInput.value = '';
+            if (contentInput) contentInput.value = '';
+            // 重置 Tab
+            switchSmartImportTab('file');
+        }
+        
+        function switchSmartImportTab(tab) {
+            const tabFile = document.getElementById('smartImportTabFile');
+            const tabText = document.getElementById('smartImportTabText');
+            const panelFile = document.getElementById('smartImportPanelFile');
+            const panelText = document.getElementById('smartImportPanelText');
+            
+            if (tab === 'file') {
+                tabFile.style.color = '#075e54';
+                tabFile.style.borderBottom = '2px solid #075e54';
+                tabText.style.color = '#999';
+                tabText.style.borderBottom = '2px solid transparent';
+                panelFile.style.display = '';
+                panelText.style.display = 'none';
+            } else {
+                tabText.style.color = '#075e54';
+                tabText.style.borderBottom = '2px solid #075e54';
+                tabFile.style.color = '#999';
+                tabFile.style.borderBottom = '2px solid transparent';
+                panelText.style.display = '';
+                panelFile.style.display = 'none';
+            }
+        }
+        
+        async function processSmartImportText() {
+            const titleInput = document.getElementById('smartImportTextTitle');
+            const contentInput = document.getElementById('smartImportTextContent');
+            const progressDiv = document.getElementById('smartImportProgress');
+            const progressBar = document.getElementById('smartImportProgressBar');
+            const progressText = document.getElementById('smartImportProgressText');
+            const resultsDiv = document.getElementById('smartImportResults');
+            const resultsList = document.getElementById('smartImportResultsList');
+            
+            const content = contentInput.value.trim();
+            if (!content) {
+                alert('请输入内容');
+                return;
+            }
+            
+            const title = titleInput.value.trim();
+            
+            progressDiv.style.display = '';
+            progressBar.style.width = '30%';
+            progressText.textContent = 'AI 正在分析内容...';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                const res = await fetch(`${API_BASE}/knowledge/analyze-text`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+                
+                const data = await res.json();
+                
+                progressBar.style.width = '100%';
+                progressText.textContent = '处理完成';
+                
+                if (data.success) {
+                    const categoryMap = {
+                        'general': '通用',
+                        'product': '产品',
+                        'service': '服务',
+                        'faq': '常见问题'
+                    };
+                    const catLabel = categoryMap[data.category] || data.category;
+                    const keywords = data.ai_keywords ? data.ai_keywords.join(' · ') : '';
+                    
+                    resultsList.innerHTML = `
+                        <div style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 8px; background: #f8fff8;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                <span style="color: #2e7d32; font-weight: 600;">✓</span>
+                                <span style="font-weight: 600; color: #333;">${escapeHtml(data.title)}</span>
+                                <span style="background: #e8f5e9; color: #2e7d32; padding: 1px 8px; border-radius: 4px; font-size: 11px;">${catLabel}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #666; line-height: 1.5;">
+                                ${data.ai_summary ? `<div><strong>AI摘要:</strong> ${escapeHtml(data.ai_summary)}</div>` : ''}
+                                ${keywords ? `<div style="margin-top: 4px; color: #075e54;"><strong>关键词:</strong> ${escapeHtml(keywords)}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 清空输入
+                    titleInput.value = '';
+                    contentInput.value = '';
+                    
+                    loadDocuments(); // 刷新列表
+                } else {
+                    resultsList.innerHTML = `
+                        <div style="padding: 12px; border: 1px solid #ffcdd2; border-radius: 6px; background: #fff8f8;">
+                            <span style="color: #c62828; font-weight: 600;">✗</span>
+                            <span style="font-size: 12px; color: #c62828;">${escapeHtml(data.message || '分析失败')}</span>
+                        </div>
+                    `;
+                }
+                
+                resultsDiv.style.display = '';
+            } catch (e) {
+                progressText.textContent = '处理失败';
+                alert('请求失败: ' + e.message);
+            }
+        }
+        
+        function handleSmartImportDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.currentTarget.style.background = '#f0f9f7';
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                processSmartImportFiles(files);
+            }
+        }
+        
+        function handleSmartImportSelect(input) {
+            if (input.files.length > 0) {
+                processSmartImportFiles(input.files);
+            }
+        }
+        
+        async function processSmartImportFiles(files) {
+            const dropZone = document.getElementById('smartImportDropZone');
+            const progressDiv = document.getElementById('smartImportProgress');
+            const progressBar = document.getElementById('smartImportProgressBar');
+            const progressText = document.getElementById('smartImportProgressText');
+            const resultsDiv = document.getElementById('smartImportResults');
+            const resultsList = document.getElementById('smartImportResultsList');
+            
+            dropZone.style.display = 'none';
+            progressDiv.style.display = '';
+            resultsDiv.style.display = 'none';
+            
+            const results = [];
+            const total = files.length;
+            
+            for (let i = 0; i < total; i++) {
+                const file = files[i];
+                const progress = Math.round(((i) / total) * 100);
+                progressBar.style.width = progress + '%';
+                progressText.textContent = `正在处理 (${i + 1}/${total}): ${file.name}...`;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const res = await fetch(`${API_BASE}/knowledge/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        results.push({
+                            name: file.name,
+                            status: 'success',
+                            title: data.title,
+                            category: data.category,
+                            ai_summary: data.ai_summary,
+                            ai_keywords: data.ai_keywords,
+                            id: data.id
+                        });
+                    } else {
+                        results.push({
+                            name: file.name,
+                            status: 'error',
+                            message: data.message || data.detail || '上传失败'
+                        });
+                    }
+                } catch (e) {
+                    results.push({
+                        name: file.name,
+                        status: 'error',
+                        message: e.message
+                    });
+                }
+            }
+            
+            progressBar.style.width = '100%';
+            progressText.textContent = `处理完成: ${results.filter(r => r.status === 'success').length}/${total} 成功`;
+            
+            // 显示结果
+            resultsList.innerHTML = results.map(r => {
+                if (r.status === 'success') {
+                    const categoryMap = {
+                        'general': '通用',
+                        'product': '产品',
+                        'service': '服务',
+                        'faq': '常见问题'
+                    };
+                    const catLabel = categoryMap[r.category] || r.category;
+                    const keywords = r.ai_keywords ? r.ai_keywords.join(' · ') : '';
+                    return `
+                        <div style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 8px; background: #f8fff8;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                <span style="color: #2e7d32; font-weight: 600;">✓</span>
+                                <span style="font-weight: 600; color: #333;">${escapeHtml(r.name)}</span>
+                                <span style="background: #e8f5e9; color: #2e7d32; padding: 1px 8px; border-radius: 4px; font-size: 11px;">${catLabel}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #666; line-height: 1.5;">
+                                <div><strong>标题:</strong> ${escapeHtml(r.title)}</div>
+                                ${r.ai_summary ? `<div style="margin-top: 4px;"><strong>AI摘要:</strong> ${escapeHtml(r.ai_summary)}</div>` : ''}
+                                ${keywords ? `<div style="margin-top: 4px; color: #075e54;"><strong>关键词:</strong> ${escapeHtml(keywords)}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div style="padding: 12px; border: 1px solid #ffcdd2; border-radius: 6px; margin-bottom: 8px; background: #fff8f8;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="color: #c62828; font-weight: 600;">✗</span>
+                                <span style="font-weight: 600; color: #333;">${escapeHtml(r.name)}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #c62828; margin-top: 4px;">${escapeHtml(r.message)}</div>
+                        </div>
+                    `;
+                }
+            }).join('');
+            
+            resultsDiv.style.display = '';
+            loadDocuments(); // 刷新文档列表
         }
         
         function switchDocTab(tab) {

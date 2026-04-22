@@ -1535,6 +1535,29 @@ async def upload_knowledge_file(
     else:
         kb_content = extracted_text if extracted_text else f"[{doc_type}文件] {doc_title}"
     
+    # AI 智能分析：自动分类、生成摘要和关键词
+    ai_analysis = {"category": category, "summary": "", "keywords": []}
+    if kb_content and len(kb_content) > 20:
+        try:
+            from llm_service import get_llm_service
+            llm = get_llm_service()
+            ai_analysis = llm.analyze_document(kb_content)
+            print(f"[知识库AI分析] 文档: {doc_title}, 分类: {ai_analysis['category']}, 关键词: {ai_analysis['keywords']}")
+        except Exception as e:
+            print(f"[知识库AI分析] 分析失败，使用默认分类: {e}")
+    
+    # 使用 AI 分析结果优化内容
+    ai_category = ai_analysis.get("category", category)
+    ai_summary = ai_analysis.get("summary", "")
+    ai_keywords = ai_analysis.get("keywords", [])
+    
+    # 将 AI 摘要和关键词追加到内容中，增强可检索性
+    enriched_content = kb_content
+    if ai_summary:
+        enriched_content += f"\n\n[AI摘要] {ai_summary}"
+    if ai_keywords:
+        enriched_content += f"\n[关键词] {', '.join(ai_keywords)}"
+    
     kb = get_knowledge_base()
     
     # 如果是替换模式
@@ -1551,8 +1574,8 @@ async def upload_knowledge_file(
         success = kb.update_document(
             doc_id=replace_doc_id,
             title=doc_title,
-            content=kb_content,
-            category=category,
+            content=enriched_content,
+            category=ai_category,
             file_path=file_path,
             file_url=file_url,
             file_type=doc_type
@@ -1568,8 +1591,11 @@ async def upload_knowledge_file(
             "id": replace_doc_id,
             "title": doc_title,
             "doc_type": doc_type,
+            "category": ai_category,
             "file_url": file_url,
-            "content_preview": kb_content[:200]
+            "ai_summary": ai_summary,
+            "ai_keywords": ai_keywords,
+            "content_preview": enriched_content[:200]
         }
     else:
         # 新增模式
@@ -1577,9 +1603,9 @@ async def upload_knowledge_file(
             title=doc_title,
             file_path=file_path,
             file_url=file_url,
-            content=kb_content,
+            content=enriched_content,
             doc_type=doc_type,
-            category=category
+            category=ai_category
         )
         
         if not doc_id:
@@ -1592,8 +1618,11 @@ async def upload_knowledge_file(
             "id": doc_id,
             "title": doc_title,
             "doc_type": doc_type,
+            "category": ai_category,
             "file_url": file_url,
-            "content_preview": kb_content[:200]
+            "ai_summary": ai_summary,
+            "ai_keywords": ai_keywords,
+            "content_preview": enriched_content[:200]
         }
 
 
@@ -1603,6 +1632,70 @@ async def search_knowledge(q: str):
     kb = get_knowledge_base()
     results = kb.search_documents(q)
     return {"success": True, "results": results}
+
+
+class AnalyzeTextRequest(BaseModel):
+    title: str = ""
+    content: str
+
+
+@app.post("/api/knowledge/analyze-text")
+async def analyze_text_to_knowledge(request: AnalyzeTextRequest):
+    """将文本内容通过AI分析后保存到知识库"""
+    content = request.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="内容不能为空")
+    
+    # AI 智能分析
+    ai_analysis = {"category": "general", "summary": "", "keywords": []}
+    try:
+        from llm_service import get_llm_service
+        llm = get_llm_service()
+        ai_analysis = llm.analyze_document(content)
+        print(f"[知识库AI分析] 分类: {ai_analysis['category']}, 关键词: {ai_analysis['keywords']}")
+    except Exception as e:
+        print(f"[知识库AI分析] 分析失败，使用默认分类: {e}")
+    
+    ai_category = ai_analysis.get("category", "general")
+    ai_summary = ai_analysis.get("summary", "")
+    ai_keywords = ai_analysis.get("keywords", [])
+    
+    # 自动生成标题（如果未提供）
+    doc_title = request.title.strip()
+    if not doc_title:
+        if ai_summary:
+            doc_title = ai_summary[:30] + "..." if len(ai_summary) > 30 else ai_summary
+        else:
+            doc_title = content[:30] + "..." if len(content) > 30 else content
+    
+    # 将 AI 摘要和关键词追加到内容中
+    enriched_content = content
+    if ai_summary:
+        enriched_content += f"\n\n[AI摘要] {ai_summary}"
+    if ai_keywords:
+        enriched_content += f"\n[关键词] {', '.join(ai_keywords)}"
+    
+    # 保存到知识库
+    kb = get_knowledge_base()
+    doc_id = kb.add_document(
+        title=doc_title,
+        content=enriched_content,
+        category=ai_category,
+        doc_type="text"
+    )
+    
+    if not doc_id:
+        raise HTTPException(status_code=500, detail="保存到知识库失败")
+    
+    return {
+        "success": True,
+        "message": "文档已保存",
+        "id": doc_id,
+        "title": doc_title,
+        "category": ai_category,
+        "ai_summary": ai_summary,
+        "ai_keywords": ai_keywords
+    }
 
 
 # ============ 知识库附件 API ============

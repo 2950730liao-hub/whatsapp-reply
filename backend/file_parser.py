@@ -28,8 +28,8 @@ def extract_text_from_file(file_path: str, filename: str) -> str:
 
     try:
         if ext in IMAGE_EXTENSIONS:
-            # 图片不提取文字，返回占位描述
-            return ""
+            # 图片使用 OCR 提取文字
+            return _extract_image_text(file_path)
 
         elif ext in PDF_EXTENSIONS:
             return _extract_pdf(file_path)
@@ -105,6 +105,31 @@ def _extract_docx(file_path: str) -> str:
         return "\n".join(paragraphs)
     except ImportError:
         return "[python-docx 未安装，请运行: pip install python-docx]"
+
+
+def _extract_image_text(file_path: str) -> str:
+    """使用 OCR 提取图片中的文字（支持中英文）"""
+    try:
+        from PIL import Image
+        import pytesseract
+
+        # 打开图片
+        image = Image.open(file_path)
+
+        # 尝试中文+英文识别
+        text = pytesseract.image_to_string(image, lang='chi_sim+eng')
+
+        if text and text.strip():
+            return text.strip()
+        else:
+            return ""
+
+    except ImportError:
+        logger.warning("pytesseract 或 Pillow 未安装，跳过图片 OCR")
+        return ""
+    except Exception as e:
+        logger.error(f"图片 OCR 失败: {e}")
+        return ""
 
 
 def _extract_text(file_path: str) -> str:
