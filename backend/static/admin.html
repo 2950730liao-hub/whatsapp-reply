@@ -3018,15 +3018,21 @@
             container.innerHTML = agents.map(a => `
                 <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 10px; ${a.is_default ? 'border-color: #075e54; background: #f0f9f7;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div>
-                            <div style="font-weight: 600; font-size: 16px;">${escapeHtml(a.name)}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 16px;">${escapeHtml(a.name)} ${a.is_default ? '<span style="background: #075e54; color: white; padding: 1px 6px; border-radius: 4px; font-size: 11px; margin-left: 6px;">默认</span>' : ''}</div>
                             <div style="color: #666; font-size: 13px; margin-top: 4px;">${escapeHtml(a.description || '暂无描述')}</div>
-                            <div style="margin-top: 8px;">
-                                ${a.tags.map(t => `<span style="background: ${t.color}20; color: ${t.color}; border: 1px solid ${t.color}40; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 5px;">${escapeHtml(t.name)}</span>`).join('')}
-                                ${a.llm_provider ? `<span style="background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 5px;">${escapeHtml(a.llm_provider.name)}</span>` : ''}
+                            <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px;">
+                                ${a.tags.map(t => `<span style="background: ${t.color}20; color: ${t.color}; border: 1px solid ${t.color}40; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${escapeHtml(t.name)}</span>`).join('')}
+                                ${a.llm_provider ? `<span style="background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${escapeHtml(a.llm_provider.name)}</span>` : ''}
                             </div>
+                            ${a.knowledge_docs && a.knowledge_docs.length > 0 ? `
+                            <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                                <span style="color: #999;">📚 知识库:</span>
+                                ${a.knowledge_docs.map(d => `<span style="background: #f0f9f7; color: #075e54; padding: 1px 6px; border-radius: 4px; margin-right: 4px;">${escapeHtml(d.title)}</span>`).join('')}
+                            </div>
+                            ` : ''}
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; flex-shrink: 0;">
                             ${!a.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultAgent(${a.id})">设为默认</button>` : ''}
                             <button class="btn btn-sm btn-secondary" onclick="editAgent(${a.id})">编辑</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteAgent(${a.id})">删除</button>
