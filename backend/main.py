@@ -1537,12 +1537,16 @@ async def upload_knowledge_file(
     
     # AI 智能分析：自动分类、生成摘要和关键词
     ai_analysis = {"category": category, "summary": "", "keywords": []}
+    ai_error = None
     if kb_content and len(kb_content) > 20:
         try:
             from llm_service import get_llm_service
             llm = get_llm_service()
             ai_analysis = llm.analyze_document(kb_content)
             print(f"[知识库AI分析] 文档: {doc_title}, 分类: {ai_analysis['category']}, 关键词: {ai_analysis['keywords']}")
+        except PermissionError as e:
+            ai_error = str(e)
+            print(f"[知识库AI分析] 认证失败: {e}")
         except Exception as e:
             print(f"[知识库AI分析] 分析失败，使用默认分类: {e}")
     
@@ -1585,7 +1589,7 @@ async def upload_knowledge_file(
             os.remove(file_path)
             raise HTTPException(status_code=500, detail="更新文档失败")
         
-        return {
+        result = {
             "success": True,
             "message": "文档已更新",
             "id": replace_doc_id,
@@ -1597,6 +1601,9 @@ async def upload_knowledge_file(
             "ai_keywords": ai_keywords,
             "content_preview": enriched_content[:200]
         }
+        if ai_error:
+            result["warning"] = ai_error
+        return result
     else:
         # 新增模式
         doc_id = kb.add_file_document(
@@ -1612,7 +1619,7 @@ async def upload_knowledge_file(
             os.remove(file_path)
             raise HTTPException(status_code=500, detail="保存到知识库失败")
         
-        return {
+        result = {
             "success": True,
             "message": "文件上传成功",
             "id": doc_id,
@@ -1624,6 +1631,9 @@ async def upload_knowledge_file(
             "ai_keywords": ai_keywords,
             "content_preview": enriched_content[:200]
         }
+        if ai_error:
+            result["warning"] = ai_error
+        return result
 
 
 @app.get("/api/knowledge/search")
@@ -1653,6 +1663,14 @@ async def analyze_text_to_knowledge(request: AnalyzeTextRequest):
         llm = get_llm_service()
         ai_analysis = llm.analyze_document(content)
         print(f"[知识库AI分析] 分类: {ai_analysis['category']}, 关键词: {ai_analysis['keywords']}")
+    except PermissionError as e:
+        # API Key 认证失败，直接返回错误
+        print(f"[知识库AI分析] 认证失败: {e}")
+        raise HTTPException(status_code=401, detail=str(e))
+    except ValueError as e:
+        # 未配置 API Key
+        print(f"[知识库AI分析] 配置错误: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"[知识库AI分析] 分析失败，使用默认分类: {e}")
     

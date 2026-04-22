@@ -41,7 +41,29 @@ class LLMService:
         self._refresh_config()
     
     def _refresh_config(self):
-        """刷新配置（兼容旧配置）"""
+        """刷新配置（优先使用数据库 Provider 配置，兼容旧配置）"""
+        # 优先从数据库获取默认 Provider
+        try:
+            from database import SessionLocal, LLMProvider
+            db = SessionLocal()
+            try:
+                provider = db.query(LLMProvider).filter(
+                    LLMProvider.is_default == True,
+                    LLMProvider.is_active == True
+                ).first()
+                if provider:
+                    self.api_key = provider.api_key
+                    self.base_url = provider.base_url or "https://api.openai.com/v1"
+                    self.model = provider.default_model or "gpt-3.5-turbo"
+                    self._config_last_refreshed = time.time()
+                    print(f"[LLMService] 已加载 Provider 配置: {provider.name} ({provider.provider_type}), 模型: {self.model}")
+                    return
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"[LLMService] 加载 Provider 配置失败，回退到旧配置: {e}")
+        
+        # 回退到旧版配置
         llm_config = self.config.get_llm_config()
         self.api_key = llm_config.get("api_key") or os.getenv("OPENAI_API_KEY", "")
         self.base_url = llm_config.get("base_url") or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
@@ -327,7 +349,7 @@ class LLMService:
         self._maybe_refresh_config()
         
         payload = {
-            "model": self.model_name,
+            "model": self.model,
             "messages": [
                 {"role": "user", "content": prompt}
             ],
@@ -483,8 +505,12 @@ class LLMService:
         """
         使用 AI 分析知识库文档内容，自动生成分类、摘要和关键词。
         返回: {"category": str, "summary": str, "keywords": List[str]}
+        遇到认证错误时抛出异常，让调用方处理。
         """
         self._maybe_refresh_config()
+        
+        if not self.api_key:
+            raise ValueError("未配置大模型 API Key，请先在系统管理中配置")
         
         # 截取前 3000 字作为分析内容（避免过长）
         analysis_content = content[:3000]
@@ -503,7 +529,7 @@ class LLMService:
 """
         
         payload = {
-            "model": self.model_name,
+            "model": self.model,
             "messages": [
                 {"role": "user", "content": prompt}
             ],
@@ -538,15 +564,18 @@ class LLMService:
                             "summary": data.get("summary", "")[:200],
                             "keywords": data.get("keywords", [])[:10]
                         }
+                elif resp.status_code in (401, 403):
+                    error_data = resp.json() if resp.text else {}
+                    error_msg = error_data.get("error", {}).get("message", "API Key 认证失败")
+                    raise PermissionError(f"大模型 API 认证失败 ({resp.status_code}): {error_msg}。请检查 API Key 是否有效。")
+                else:
+                    error_text = resp.text[:200]
+                    raise RuntimeError(f"大模型 API 请求失败 ({resp.status_code}): {error_text}")
+        except (PermissionError, ValueError):
+            raise
         except Exception as e:
             logger.error(f"文档 AI 分析失败: {e}")
-        
-        # 失败时返回默认值
-        return {
-            "category": "general",
-            "summary": content[:100] + "..." if len(content) > 100 else content,
-            "keywords": []
-        }
+            raise RuntimeError(f"AI 分析请求失败: {e}")
 
 
 # 全局实例
