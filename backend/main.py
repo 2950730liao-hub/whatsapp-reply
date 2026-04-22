@@ -1133,6 +1133,45 @@ async def close_conversation(conversation_id: int, db: Session = Depends(get_db)
     return {"success": True, "message": "会话已关闭"}
 
 
+@app.post("/api/customers/{customer_id}/conversation/toggle")
+async def toggle_conversation_status(customer_id: int, db: Session = Depends(get_db)):
+    """切换客户会话状态（bot <-> handover）"""
+    conversation = db.query(Conversation).filter(
+        Conversation.customer_id == customer_id
+    ).first()
+    
+    if not conversation:
+        # 创建新会话，默认 bot 状态
+        conversation = Conversation(
+            customer_id=customer_id,
+            status="bot"
+        )
+        db.add(conversation)
+        db.commit()
+        db.refresh(conversation)
+        return {
+            "success": True,
+            "message": "会话已创建，当前状态: AI接管",
+            "status": "bot"
+        }
+    
+    # 切换状态
+    if conversation.status == "handover":
+        conversation.status = "bot"
+        message = "已切换为 AI 接管"
+    else:
+        conversation.status = "handover"
+        message = "已切换为 人工接管"
+    
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": message,
+        "status": conversation.status
+    }
+
+
 # ============ 沟通计划 API ============
 
 @app.get("/api/plans")

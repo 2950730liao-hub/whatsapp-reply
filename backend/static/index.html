@@ -538,8 +538,16 @@
         }
         
         .tag-option.selected {
-            border-color: #075e54;
-            background: #e3f2fd;
+            border-color: #075e54 !important;
+            background: #e3f2fd !important;
+            color: #075e54 !important;
+            box-shadow: 0 0 0 2px #075e54;
+            font-weight: 600;
+        }
+        
+        .tag-option.selected::after {
+            content: ' ✓';
+            font-weight: bold;
         }
         
         /* 知识库样式 */
@@ -1321,7 +1329,7 @@
                 currentCustomerDetail = await res.json();
                 
                 // 加载可用标签
-                const tagsRes = await fetch(`${API_BASE}/tags`);
+                const tagsRes = await fetch(`${API_BASE}/customer-tags`);
                 const tagsData = await tagsRes.json();
                 availableTags = tagsData.tags || [];
                 
@@ -1396,10 +1404,18 @@
                 </div>
                 
                 <div class="detail-section">
-                    <h4>会话状态</h4>
+                    <h4>会话接管</h4>
                     <div class="detail-stat">
                         <span class="detail-stat-label">当前状态</span>
-                        <span class="detail-stat-value">${detail.conversation ? detail.conversation.status : '无会话'}</span>
+                        <span class="detail-stat-value" id="conversationStatusText">${getConversationStatusText(detail.conversation ? detail.conversation.status : '无会话')}</span>
+                    </div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <button class="btn ${detail.conversation && detail.conversation.status === 'handover' ? 'btn-primary' : 'btn-warning'}" 
+                                id="toggleConversationBtn"
+                                onclick="toggleConversationStatus()"
+                                style="width: 100%;">
+                            ${detail.conversation && detail.conversation.status === 'handover' ? '🤖 切换为 AI 接管' : '👤 切换为人工接管'}
+                        </button>
                     </div>
                 </div>
             `;
@@ -1408,6 +1424,61 @@
         function toggleTag(tagId) {
             const tagEl = document.querySelector(`#tagSelector .tag-option[data-id="${tagId}"]`);
             tagEl.classList.toggle('selected');
+        }
+        
+        function getConversationStatusText(status) {
+            const statusMap = {
+                'bot': '🤖 AI 接管中',
+                'handover': '👤 人工接管中',
+                'closed': '🔒 会话已关闭',
+                '无会话': '— 无活跃会话'
+            };
+            return statusMap[status] || status;
+        }
+        
+        async function toggleConversationStatus() {
+            if (!currentCustomer) return;
+            
+            const btn = document.getElementById('toggleConversationBtn');
+            const statusText = document.getElementById('conversationStatusText');
+            
+            btn.disabled = true;
+            btn.textContent = '切换中...';
+            
+            try {
+                const res = await fetch(`${API_BASE}/customers/${currentCustomer.id}/conversation/toggle`, {
+                    method: 'POST'
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast(data.message);
+                    
+                    // 更新界面显示
+                    statusText.textContent = getConversationStatusText(data.status);
+                    
+                    if (data.status === 'handover') {
+                        btn.className = 'btn btn-primary';
+                        btn.textContent = '🤖 切换为 AI 接管';
+                    } else {
+                        btn.className = 'btn btn-warning';
+                        btn.textContent = '👤 切换为人工接管';
+                    }
+                    
+                    // 更新当前客户详情的会话状态
+                    if (currentCustomerDetail) {
+                        currentCustomerDetail.conversation = { status: data.status };
+                    }
+                } else {
+                    alert(data.message || '切换失败');
+                }
+            } catch (e) {
+                console.error('切换会话状态失败:', e);
+                alert('切换失败');
+            } finally {
+                btn.disabled = false;
+            }
         }
         
         function closeCustomerDetail() {
