@@ -2566,6 +2566,55 @@ async def set_default_agent(agent_id: int, db: Session = Depends(get_db)):
     return {"success": True, "message": "已设置为默认智能体"}
 
 
+class AgentTestRequest(BaseModel):
+    message: str
+
+
+@app.post("/api/agents/{agent_id}/test")
+async def test_agent(agent_id: int, req: AgentTestRequest, db: Session = Depends(get_db)):
+    """测试智能体回复"""
+    agent = db.query(AIAgent).filter(AIAgent.id == agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="智能体不存在")
+    
+    try:
+        from llm_service import get_llm_service
+        from knowledge_base import get_knowledge_base
+        
+        llm_service = get_llm_service()
+        kb = get_knowledge_base()
+        
+        # 获取绑定的知识库
+        knowledge_bindings = db.query(AgentKnowledgeBinding).filter(
+            AgentKnowledgeBinding.agent_id == agent_id
+        ).all()
+        
+        knowledge_base = None
+        if knowledge_bindings:
+            doc_ids = [b.knowledge_doc_id for b in knowledge_bindings]
+            knowledge_text = kb.get_documents_by_ids(doc_ids)
+            if knowledge_text:
+                knowledge_base = knowledge_text
+        
+        # 构建测试消息
+        test_messages = [{"direction": "incoming", "content": req.message}]
+        
+        # 调用LLM生成回复
+        reply = await llm_service.generate_reply_with_agent(
+            customer={"name": "测试用户", "phone": "test"},
+            messages=test_messages,
+            agent=agent,
+            knowledge_base=knowledge_base,
+            db=db
+        )
+        
+        return {"success": True, "reply": reply}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"测试失败: {str(e)}")
+
+
 # ============ 客户标签管理 API ============
 
 class CustomerTagCreate(BaseModel):

@@ -1025,6 +1025,36 @@
         </div>
     </div>
     
+    <!-- 智能体测试模态框 -->
+    <div class="modal" id="agentTestModal">
+        <div class="modal-content" style="max-width: 700px; height: 80vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h3>🧪 测试智能体: <span id="testAgentName" style="color: #075e54;"></span></h3>
+                <button class="close-btn" onclick="closeAgentTestModal()">&times;</button>
+            </div>
+            
+            <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 20px;">
+                <!-- 测试对话区域 -->
+                <div id="testChatArea" style="flex: 1; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fafafa;">
+                    <div style="text-align: center; color: #999; padding: 40px 0;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🤖</div>
+                        <p>输入消息测试智能体回复</p>
+                        <p style="font-size: 12px;">智能体将使用其配置的系统提示词和挂载的知识库进行回复</p>
+                    </div>
+                </div>
+                
+                <!-- 输入区域 -->
+                <div style="display: flex; gap: 10px;">
+                    <input type="hidden" id="testAgentId">
+                    <input type="text" id="testMessageInput" placeholder="输入测试消息..." style="flex: 1; padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;" onkeydown="if(event.key==='Enter')sendTestMessage()">
+                    <button class="btn btn-primary" onclick="sendTestMessage()" id="testSendBtn" style="padding: 12px 24px;">
+                        发送
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- 客户标签模态框 -->
     <div class="modal" id="tagModal">
         <div class="modal-content" style="max-width: 400px;">
@@ -3033,6 +3063,7 @@
                             ` : ''}
                         </div>
                         <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                            <button class="btn btn-sm" style="background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d3240;" onclick="openAgentTestModal(${a.id})">🧪 测试</button>
                             ${!a.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultAgent(${a.id})">设为默认</button>` : ''}
                             <button class="btn btn-sm btn-secondary" onclick="editAgent(${a.id})">编辑</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteAgent(${a.id})">删除</button>
@@ -3165,6 +3196,135 @@
         
         function closeAgentModal() {
             document.getElementById('agentModal').classList.remove('show');
+        }
+        
+        // ============ 智能体测试功能 ============
+        function openAgentTestModal(agentId) {
+            const agent = agents.find(a => a.id === agentId);
+            if (!agent) return;
+            
+            document.getElementById('testAgentId').value = agentId;
+            document.getElementById('testAgentName').textContent = agent.name;
+            document.getElementById('testChatArea').innerHTML = `
+                <div style="text-align: center; color: #999; padding: 40px 0;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🤖</div>
+                    <p>输入消息测试智能体回复</p>
+                    <p style="font-size: 12px;">智能体将使用其配置的系统提示词和挂载的知识库进行回复</p>
+                </div>
+            `;
+            document.getElementById('testMessageInput').value = '';
+            document.getElementById('agentTestModal').classList.add('show');
+            document.getElementById('testMessageInput').focus();
+        }
+        
+        function closeAgentTestModal() {
+            document.getElementById('agentTestModal').classList.remove('show');
+        }
+        
+        async function sendTestMessage() {
+            const agentId = document.getElementById('testAgentId').value;
+            const message = document.getElementById('testMessageInput').value.trim();
+            const chatArea = document.getElementById('testChatArea');
+            const sendBtn = document.getElementById('testSendBtn');
+            
+            if (!message) return;
+            
+            // 如果是第一条消息，清空初始提示
+            const isFirstMessage = chatArea.querySelector('.test-msg-user') === null;
+            if (isFirstMessage) {
+                chatArea.innerHTML = '';
+            }
+            
+            // 添加用户消息
+            const userMsgDiv = document.createElement('div');
+            userMsgDiv.className = 'test-msg-user';
+            userMsgDiv.innerHTML = `
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                    <div style="background: #dcf8c6; padding: 10px 14px; border-radius: 12px 12px 0 12px; max-width: 70%; word-break: break-word;">
+                        <div style="font-size: 14px; color: #333;">${escapeHtml(message)}</div>
+                    </div>
+                </div>
+            `;
+            chatArea.appendChild(userMsgDiv);
+            
+            // 清空输入框
+            document.getElementById('testMessageInput').value = '';
+            
+            // 添加加载中的AI回复
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'test-loading';
+            loadingDiv.innerHTML = `
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                    <div style="background: white; padding: 10px 14px; border-radius: 12px 12px 12px 0; max-width: 70%; border: 1px solid #e0e0e0;">
+                        <div style="display: flex; align-items: center; gap: 8px; color: #666;">
+                            <div style="width: 16px; height: 16px; border: 2px solid #e0e0e0; border-top-color: #075e54; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <span style="font-size: 13px;">智能体思考中...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatArea.appendChild(loadingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            // 禁用发送按钮
+            sendBtn.disabled = true;
+            sendBtn.textContent = '发送中...';
+            
+            try {
+                const res = await fetch(`${API_BASE}/agents/${agentId}/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                
+                // 移除加载中
+                const loading = document.getElementById('test-loading');
+                if (loading) loading.remove();
+                
+                if (data.success) {
+                    // 添加AI回复
+                    const aiMsgDiv = document.createElement('div');
+                    aiMsgDiv.innerHTML = `
+                        <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                            <div style="background: white; padding: 10px 14px; border-radius: 12px 12px 12px 0; max-width: 70%; border: 1px solid #e0e0e0;">
+                                <div style="font-size: 11px; color: #075e54; margin-bottom: 4px; font-weight: 600;">🤖 智能体</div>
+                                <div style="font-size: 14px; color: #333; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(data.reply)}</div>
+                            </div>
+                        </div>
+                    `;
+                    chatArea.appendChild(aiMsgDiv);
+                } else {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.innerHTML = `
+                        <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                            <div style="background: #ffebee; padding: 10px 14px; border-radius: 12px 12px 12px 0; max-width: 70%; border: 1px solid #ef9a9a;">
+                                <div style="font-size: 11px; color: #c62828; margin-bottom: 4px; font-weight: 600;">❌ 错误</div>
+                                <div style="font-size: 13px; color: #c62828;">${escapeHtml(data.detail || '请求失败')}</div>
+                            </div>
+                        </div>
+                    `;
+                    chatArea.appendChild(errorDiv);
+                }
+            } catch (e) {
+                const loading = document.getElementById('test-loading');
+                if (loading) loading.remove();
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.innerHTML = `
+                    <div style="display: flex; justify-content: flex-start; margin-bottom: 12px;">
+                        <div style="background: #ffebee; padding: 10px 14px; border-radius: 12px 12px 12px 0; max-width: 70%; border: 1px solid #ef9a9a;">
+                            <div style="font-size: 11px; color: #c62828; margin-bottom: 4px; font-weight: 600;">❌ 错误</div>
+                            <div style="font-size: 13px; color: #c62828;">${escapeHtml(e.message)}</div>
+                        </div>
+                    </div>
+                `;
+                chatArea.appendChild(errorDiv);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送';
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
         }
         
         // 提示词优化功能
