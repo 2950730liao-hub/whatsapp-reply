@@ -284,7 +284,8 @@ class NeonizeWhatsAppClient(IWhatsAppClient):
                 content=message_text,
                 direction="outgoing" if is_from_me else "incoming",
                 sender_name=sender_phone if not is_from_me else "AI助手",
-                message_type="text"
+                message_type="text",
+                is_processed=is_from_me  # 自己发送的默认已处理，收到的默认未处理
             )
             db.add(msg)
             
@@ -654,11 +655,25 @@ class NeonizeWhatsAppClient(IWhatsAppClient):
     def get_current_user(self) -> Optional[str]:
         """获取当前登录用户信息"""
         try:
-            if self.client and self.client.me:
-                # 从 JID 中提取手机号
+            if not self.client:
+                return None
+            
+            # 兼容不同 Neonize 版本
+            user_jid = None
+            if hasattr(self.client, 'me') and self.client.me:
                 user_jid = self.client.me
+            elif hasattr(self.client, 'get_me'):
+                try:
+                    user_jid = self.client.get_me()
+                except:
+                    pass
+            
+            if user_jid:
+                # 从 JID 中提取手机号
                 if hasattr(user_jid, 'User'):
                     return user_jid.User
+                elif hasattr(user_jid, 'user'):
+                    return user_jid.user
                 elif isinstance(user_jid, str):
                     return user_jid.split("@")[0] if "@" in user_jid else user_jid
             return None

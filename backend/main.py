@@ -111,6 +111,70 @@ class HandoverRequest(BaseModel):
     agent_id: int
 
 
+async def recover_unprocessed_messages():
+    """服务启动后，检查并补回复崩溃期间未处理的消息"""
+    from datetime import timedelta
+    from database import SessionLocal, Message, Customer
+    from communication_service import CommunicationService
+    
+    # 等待 WhatsApp 连接稳定
+    await asyncio.sleep(30)
+    
+    db = SessionLocal()
+    try:
+        # 查询最近 30 分钟内未处理的 incoming 消息
+        since = datetime.utcnow() - timedelta(minutes=30)
+        unprocessed = db.query(Message).filter(
+            Message.direction == "incoming",
+            Message.is_processed == False,
+            Message.created_at >= since
+        ).order_by(Message.created_at.desc()).all()
+        
+        if not unprocessed:
+            print("[Recover] 未发现未处理消息，无需补回复")
+            return
+        
+        # 按客户分组，每个客户只处理最新一条
+        customer_latest = {}
+        for msg in unprocessed:
+            if msg.customer_id not in customer_latest:
+                customer_latest[msg.customer_id] = msg
+        
+        print(f"[Recover] 发现 {len(customer_latest)} 个客户有未处理消息，开始补回复...")
+        
+        # 逐个处理
+        comm_service = CommunicationService(None, whatsapp_client)
+        for customer_id, msg in customer_latest.items():
+            try:
+                # 重新查询确保对象在有效 session 中
+                fresh_msg = db.query(Message).filter(Message.id == msg.id).first()
+                fresh_customer = db.query(Customer).filter(Customer.id == customer_id).first()
+                if not fresh_msg or not fresh_customer:
+                    continue
+                
+                # 再次检查是否已被处理
+                if fresh_msg.is_processed:
+                    print(f"[Recover] 消息 {msg.id} 已被处理，跳过")
+                    continue
+                
+                print(f"[Recover] 为客户 {fresh_customer.phone} 补回复消息 {msg.id}: {fresh_msg.content[:30]}...")
+                
+                # 调用处理逻辑（在线程池中运行避免阻塞事件循环）
+                await asyncio.to_thread(comm_service.handle_incoming_message, fresh_msg, fresh_customer)
+                
+                # 等待一下避免并发过高
+                await asyncio.sleep(2)
+                
+            except Exception as e:
+                print(f"[Recover] 补回复消息 {msg.id} 失败: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        print("[Recover] 补回复任务完成")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
@@ -159,6 +223,10 @@ async def lifespan(app: FastAPI):
         print("✅ 通讯录监控服务已启动（30秒轮询）")
     except Exception as e:
         print(f"⚠️ 通讯录监控服务启动失败: {e}")
+    
+    # 启动未处理消息恢复任务（服务崩溃重启后补回复）
+    asyncio.create_task(recover_unprocessed_messages())
+    print("✅ 未处理消息恢复任务已启动（30秒后执行）")
     
     yield
     
@@ -375,6 +443,43 @@ async def refresh_qr_code():
         return {
             "success": False,
             "message": f"刷新失败: {str(e)}"
+        }
+
+
+@app.get("/api/auth/qr-image")
+async def get_qr_image():
+    """获取二维码图片（base64）"""
+    try:
+        from neonize_client import get_current_qr
+        qr_data = get_current_qr()
+        
+        if not qr_data:
+            return {
+                "success": False,
+                "message": "暂无二维码，请等待生成"
+            }
+        
+        # 使用 segno 生成二维码图片
+        import segno
+        import io
+        import base64
+        
+        qr = segno.make(qr_data, error='h')
+        buffer = io.BytesIO()
+        qr.save(buffer, kind='png', scale=10, border=4)
+        buffer.seek(0)
+        
+        img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
+        return {
+            "success": True,
+            "qr_image": f"data:image/png;base64,{img_base64}",
+            "message": "二维码已生成"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"生成二维码失败: {str(e)}"
         }
 
 
@@ -2748,38 +2853,37 @@ async def optimize_prompt(request: PromptOptimizeRequest, db: Session = Depends(
     if not request.prompt or len(request.prompt.strip()) < 10:
         return {"success": False, "message": "提示词太短，至少需要10个字符"}
     
-    try:
-        # 获取提供商
-        provider = None
-        if request.provider_id:
-            provider = db.query(LLMProvider).filter(
-                LLMProvider.id == request.provider_id,
-                LLMProvider.is_active == True
-            ).first()
+    # 获取提供商
+    provider = None
+    if request.provider_id:
+        provider = db.query(LLMProvider).filter(
+            LLMProvider.id == request.provider_id,
+            LLMProvider.is_active == True
+        ).first()
+    
+    # 如果没有指定或找不到，使用默认提供商
+    if not provider:
+        provider = db.query(LLMProvider).filter(
+            LLMProvider.is_default == True,
+            LLMProvider.is_active == True
+        ).first()
+    
+    # 如果没有配置任何提供商，使用环境变量配置
+    if not provider:
+        import os
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        model = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
         
-        # 如果没有指定或找不到，使用默认提供商
-        if not provider:
-            provider = db.query(LLMProvider).filter(
-                LLMProvider.is_default == True,
-                LLMProvider.is_active == True
-            ).first()
-        
-        # 如果没有配置任何提供商，使用环境变量配置
-        if not provider:
-            import os
-            api_key = os.getenv("OPENAI_API_KEY", "")
-            base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-            model = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
-            
-            if not api_key:
-                return {"success": False, "message": "未配置大模型提供商，请先配置"}
-        else:
-            api_key = provider.api_key
-            base_url = provider.base_url or "https://api.openai.com/v1"
-            model = provider.default_model
-        
-        # 构建优化提示词的系统提示
-        system_prompt = """你是一位专业的AI提示词工程师。你的任务是帮助用户优化他们的AI提示词。
+        if not api_key:
+            return {"success": False, "message": "未配置大模型提供商，请先配置"}
+    else:
+        api_key = provider.api_key
+        base_url = provider.base_url or "https://api.openai.com/v1"
+        model = provider.default_model
+    
+    # 构建优化提示词的系统提示
+    system_prompt = """你是一位专业的AI提示词工程师。你的任务是帮助用户优化他们的AI提示词。
 
 请分析用户提供的提示词，并提供以下优化：
 1. **优化后的提示词** - 改进后的完整提示词
@@ -2799,26 +2903,33 @@ async def optimize_prompt(request: PromptOptimizeRequest, db: Session = Depends(
 
 【优化说明】
 （简要说明改进点）"""
-        
-        import httpx
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"请优化以下提示词：\n\n{request.prompt}"}
-                    ],
-                    "temperature": 0.7,
-                    "max_tokens": 1000
-                },
-                timeout=30.0
-            )
+    
+    # 调用 LLM API（带重试逻辑）
+    import httpx
+    import asyncio
+    max_retries = 2
+    last_error = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"请优化以下提示词：\n\n{request.prompt}"}
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 1500
+                    },
+                    timeout=60.0  # 增加超时时间到60秒
+                )
             
             if response.status_code == 200:
                 result = response.json()
@@ -2829,13 +2940,27 @@ async def optimize_prompt(request: PromptOptimizeRequest, db: Session = Depends(
                     "provider_used": provider.name if provider else "默认配置"
                 }
             else:
-                return {
-                    "success": False,
-                    "message": f"优化失败: {response.status_code} - {response.text}"
-                }
-                
-    except Exception as e:
-        return {"success": False, "message": f"优化失败: {str(e)}"}
+                last_error = f"{response.status_code} - {response.text}"
+                print(f"[PromptOptimize] 尝试 {attempt+1}/{max_retries+1} 失败: {last_error}")
+                if attempt < max_retries:
+                    await asyncio.sleep(2)
+                continue
+        
+        except httpx.ReadTimeout as e:
+            last_error = "ReadTimeout"
+            print(f"[PromptOptimize] 尝试 {attempt+1}/{max_retries+1} 超时，正在进行第 {attempt+1} 次重试...")
+            if attempt < max_retries:
+                await asyncio.sleep(2)
+            continue
+        except Exception as e:
+            last_error = str(e)
+            print(f"[PromptOptimize] 尝试 {attempt+1}/{max_retries+1} 失败: {last_error}")
+            if attempt < max_retries:
+                await asyncio.sleep(2)
+            continue
+    
+    # 所有重试都失败
+    return {"success": False, "message": f"优化失败: {last_error}"}
 
 
 # ============ 自动打标签规则 API ============

@@ -1111,7 +1111,7 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8000/api';
+        const API_BASE = '/api';
         
         // 等待 DOM 完全加载后再初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -3260,25 +3260,34 @@
                 return;
             }
             
+            // 调试日志
+            const url = id ? `${API_BASE}/agents/${id}` : `${API_BASE}/agents`;
+            const method = id ? 'PUT' : 'POST';
+            console.log('[saveAgent] agentId=', id, 'url=', url, 'method=', method);
+            console.log('[saveAgent] data=', JSON.stringify(data));
+            
             try {
-                const url = id ? `${API_BASE}/agents/${id}` : `${API_BASE}/agents`;
-                const method = id ? 'PUT' : 'POST';
-                
                 const res = await fetch(url, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
                 
+                console.log('[saveAgent] response status=', res.status, 'ok=', res.ok);
+                
                 if (res.ok) {
                     closeAgentModal();
                     loadAgents();
                     showMessage('agentMessage', '保存成功', 'success');
                 } else {
-                    const err = await res.json();
-                    alert('保存失败: ' + (err.detail || '未知错误'));
+                    const errText = await res.text();
+                    console.log('[saveAgent] error response=', errText);
+                    let errMsg = '未知错误';
+                    try { errMsg = JSON.parse(errText).detail || errText; } catch(e) { errMsg = errText; }
+                    alert('保存失败: ' + errMsg);
                 }
             } catch (e) {
+                console.error('[saveAgent] exception=', e);
                 alert('保存失败: ' + e.message);
             }
         }

@@ -84,6 +84,18 @@ class CommunicationService:
             if self.db is None:
                 db.close()
     
+    def _mark_message_processed(self, message_id: int):
+        """标记消息为已处理（AI 已回复）"""
+        try:
+            with self._get_db() as db:
+                msg = db.query(Message).filter(Message.id == message_id).first()
+                if msg:
+                    msg.is_processed = True
+                    db.commit()
+                    print(f"[MessageProcess] 消息 {message_id} 标记为已处理")
+        except Exception as e:
+            logger.warning(f"[MessageProcess] 标记消息已处理失败: {e}")
+    
     def handle_incoming_message(self, message: Message, customer: Customer) -> bool:
         """
         处理收到的消息
@@ -380,10 +392,10 @@ class CommunicationService:
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future = executor.submit(run_async)
                     try:
-                        reply = future.result(timeout=30)  # 30秒超时
+                        reply = future.result(timeout=60)  # 增加到60秒超时
                     except concurrent.futures.TimeoutError:
-                        logger.error(f"[AI回复] 30秒超时，发送默认回复")
-                        default_reply = "感谢您的消息，我们正在处理中，稍后会回复您。"
+                        logger.error(f"[AI回复] 60秒超时，发送默认回复")
+                        default_reply = "老细，我地而家幫你計緊價，請稍等一陣，好快覆你！"
                         self._send_reply(customer_data['phone'], default_reply)
                         # 记录到数据库
                         with self._get_db() as db:
@@ -395,6 +407,9 @@ class CommunicationService:
                             )
                             db.add(msg)
                             db.commit()
+                        # 标记原消息为已处理
+                        if hasattr(incoming_msg, 'id') and incoming_msg.id:
+                            self._mark_message_processed(incoming_msg.id)
                         return
                 
                 if reply:
@@ -409,6 +424,9 @@ class CommunicationService:
                     self._send_reply(customer_data['phone'], clean_reply)
                     self._record_outgoing_message(customer_data['id'], clean_reply)
                     print(f"[AI回复] 已发送给客户 {customer_data['phone']}")
+                    # 标记原消息为已处理
+                    if hasattr(incoming_msg, 'id') and incoming_msg.id:
+                        self._mark_message_processed(incoming_msg.id)
                     
                     # 如果 AI 指定了要发送的附件
                     if attachment_markers:
@@ -464,6 +482,9 @@ class CommunicationService:
                     )
                     self._send_reply(customer.phone, default_reply)
                     self._record_outgoing_message(customer.id, default_reply)
+                    # 标记原消息为已处理（默认回复也算已处理）
+                    if hasattr(incoming_msg, 'id') and incoming_msg.id:
+                        self._mark_message_processed(incoming_msg.id)
     
     async def _async_send_ai_reply(self, customer_id: int, incoming_msg: Message, messages, knowledge):
         """异步发送AI回复"""

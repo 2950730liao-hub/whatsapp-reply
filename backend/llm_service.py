@@ -217,6 +217,10 @@ class LLMService:
         # 使用智能体的系统提示词
         system_prompt = agent.system_prompt if agent else self._build_system_prompt(customer, knowledge_base)
         
+        # 调试：打印完整 system_prompt 内容（只打印一次，截断到500字符）
+        print(f"[Debug] system_prompt 长度: {len(system_prompt)}")
+        print(f"[Debug] system_prompt 前500字符: {system_prompt[:500]}")
+        
         # 添加知识库内容
         if knowledge_base:
             system_prompt += f"\n\n以下是相关知识库内容，请在回复时参考：\n{knowledge_base}"

@@ -664,7 +664,10 @@
                     <button onclick="refreshStatus()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
                         🔄 刷新
                     </button>
-                    <button onclick="logoutWhatsApp()" style="background: rgba(244,67,54,0.3); border: 1px solid rgba(244,67,54,0.5); color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                    <button id="loginBtn" onclick="showQRModal()" style="background: rgba(37,211,102,0.3); border: 1px solid rgba(37,211,102,0.5); color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; display: none;">
+                        📷 扫码登录
+                    </button>
+                    <button id="logoutBtn" onclick="logoutWhatsApp()" style="background: rgba(244,67,54,0.3); border: 1px solid rgba(244,67,54,0.5); color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
                         🚪 退出登录
                     </button>
                 </div>
@@ -843,9 +846,9 @@
     </div>
 
     <script>
-        // API 基础 URL
-        const API_BASE = 'http://localhost:8000/api';
-        const WS_URL = 'ws://localhost:8000/ws';
+        // API 基础 URL（使用相对路径，适配任意主机）
+        const API_BASE = '/api';
+        const WS_URL = 'ws://' + window.location.host + '/ws';
         
         // 状态
         let currentCustomer = null;
@@ -885,6 +888,9 @@
                 const res = await fetch(`${API_BASE}/auth/status`);
                 const data = await res.json();
                 
+                const loginBtn = document.getElementById('loginBtn');
+                const logoutBtn = document.getElementById('logoutBtn');
+                
                 if (data.connected && data.logged_in) {
                     connectionStatusEl.textContent = '● 已连接';
                     connectionStatusEl.className = 'status connected';
@@ -896,16 +902,120 @@
                     } else {
                         loginNumberEl.textContent = '';
                     }
+                    
+                    // 已登录：隐藏登录按钮，显示退出按钮
+                    if (loginBtn) loginBtn.style.display = 'none';
+                    if (logoutBtn) logoutBtn.style.display = 'inline-block';
                 } else {
                     connectionStatusEl.textContent = '● WhatsApp 未登录';
                     connectionStatusEl.className = 'status disconnected';
                     document.getElementById('loginNumber').textContent = '';
+                    
+                    // 未登录：显示登录按钮，隐藏退出按钮
+                    if (loginBtn) loginBtn.style.display = 'inline-block';
+                    if (logoutBtn) logoutBtn.style.display = 'none';
                 }
             } catch (e) {
                 connectionStatusEl.textContent = '● 服务未启动';
                 connectionStatusEl.className = 'status disconnected';
                 document.getElementById('loginNumber').textContent = '';
             }
+        }
+        
+        let qrCheckInterval = null;
+        
+        // 显示二维码弹窗
+        async function showQRModal() {
+            const modal = document.getElementById('qrModal');
+            modal.style.display = 'flex';
+            await fetchAndShowQR();
+        }
+        
+        // 关闭二维码弹窗
+        function closeQRModal() {
+            const modal = document.getElementById('qrModal');
+            modal.style.display = 'none';
+            if (qrCheckInterval) {
+                clearInterval(qrCheckInterval);
+                qrCheckInterval = null;
+            }
+        }
+        
+        // 获取并显示二维码
+        async function fetchAndShowQR() {
+            const content = document.getElementById('qrModalContent');
+            const text = document.getElementById('qrModalText');
+            
+            content.innerHTML = '<div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #25d366; border-radius: 50%; animation: spin 1s linear infinite;"></div>';
+            text.textContent = '正在获取二维码...';
+            
+            try {
+                // 先获取状态
+                const statusRes = await fetch(`${API_BASE}/auth/status`);
+                const statusData = await statusRes.json();
+                
+                if (statusData.connected && statusData.logged_in) {
+                    text.textContent = '已登录，无需扫码';
+                    content.innerHTML = '<div style="font-size: 48px;">✅</div>';
+                    setTimeout(closeQRModal, 1500);
+                    return;
+                }
+                
+                if (!statusData.qr_code) {
+                    text.textContent = '二维码未生成，请刷新重试';
+                    content.innerHTML = '<div style="color: #999; font-size: 14px;">暂无二维码</div>';
+                    return;
+                }
+                
+                // 获取二维码图片
+                const imgRes = await fetch(`${API_BASE}/auth/qr-image`);
+                const imgData = await imgRes.json();
+                
+                if (imgData.success && imgData.qr_image) {
+                    content.innerHTML = `<img src="${imgData.qr_image}" alt="WhatsApp QR Code" style="max-width: 100%; max-height: 100%; border-radius: 8px;">`;
+                    text.textContent = '请使用 WhatsApp 扫描上方二维码（有效期约 20 秒）';
+                    startQRCheck();
+                } else {
+                    text.textContent = imgData.message || '获取二维码失败';
+                    content.innerHTML = '<div style="color: #f44336; font-size: 14px;">❌ 获取失败</div>';
+                }
+            } catch (e) {
+                text.textContent = '获取二维码失败，请刷新重试';
+                content.innerHTML = '<div style="color: #f44336; font-size: 14px;">❌ 获取失败</div>';
+            }
+        }
+        
+        // 刷新二维码（Neonize 不支持真正刷新，重新获取当前二维码）
+        async function refreshQRCode() {
+            await fetchAndShowQR();
+        }
+        
+        // 开始轮询检查登录状态
+        function startQRCheck() {
+            if (qrCheckInterval) {
+                clearInterval(qrCheckInterval);
+            }
+            
+            qrCheckInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/auth/status`);
+                    const data = await res.json();
+                    
+                    if (data.connected && data.logged_in) {
+                        clearInterval(qrCheckInterval);
+                        qrCheckInterval = null;
+                        
+                        document.getElementById('qrModalContent').innerHTML = '<div style="font-size: 48px;">✅</div>';
+                        document.getElementById('qrModalText').textContent = '登录成功！';
+                        
+                        await checkStatus();
+                        
+                        setTimeout(closeQRModal, 1500);
+                    }
+                } catch (e) {
+                    console.error('检查登录状态失败:', e);
+                }
+            }, 3000);
         }
         
         // 刷新状态
@@ -1692,5 +1802,36 @@
         // 启动
         init();
     </script>
+    
+    <!-- WhatsApp 扫码登录弹窗 -->
+    <div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 16px; padding: 30px; max-width: 400px; width: 90%; text-align: center; position: relative;">
+            <button onclick="closeQRModal()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">×</button>
+            <h3 style="margin-bottom: 20px; color: #333;">📱 扫码登录 WhatsApp</h3>
+            <div id="qrModalContent" style="width: 250px; height: 250px; margin: 0 auto 15px; background: #f5f5f5; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #25d366; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            </div>
+            <p id="qrModalText" style="font-size: 14px; color: #666; margin-bottom: 15px;">正在获取二维码...</p>
+            <button onclick="refreshQRCode()" style="background: #25d366; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                🔄 刷新二维码
+            </button>
+            <div style="margin-top: 15px; padding: 12px; background: #e3f2fd; border-radius: 8px; text-align: left;">
+                <p style="font-size: 12px; color: #1976d2; margin-bottom: 5px;"><strong>操作步骤：</strong></p>
+                <ol style="font-size: 12px; color: #555; padding-left: 16px; margin: 0;">
+                    <li>打开手机 WhatsApp</li>
+                    <li>设置 → 关联设备</li>
+                    <li>点击"关联新设备"</li>
+                    <li>扫描上方二维码</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </body>
 </html>

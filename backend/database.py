@@ -56,6 +56,7 @@ class Message(Base):
     sender_name = Column(String(100))
     message_type = Column(String(20), default="text")
     is_read = Column(Boolean, default=False)
+    is_processed = Column(Boolean, default=False)  # AI 是否已处理（回复）
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # 关系
@@ -253,8 +254,18 @@ class LLMModel(Base):
 
 
 def init_db():
-    """初始化数据库"""
+    """初始化数据库（自动迁移列）"""
     Base.metadata.create_all(bind=engine)
+    
+    # 自动迁移：检查 messages 表是否有 is_processed 列
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(messages)"))
+        columns = [row[1] for row in result]
+        if "is_processed" not in columns:
+            conn.execute(text("ALTER TABLE messages ADD COLUMN is_processed BOOLEAN DEFAULT 0"))
+            conn.commit()
+            print("[DB Migrate] 已添加 messages.is_processed 列")
 
 
 class AutoTagRule(Base):
