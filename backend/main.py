@@ -44,6 +44,9 @@ from schedule_runner import get_schedule_runner
 from admin_notify import get_admin_notify_db
 from notify_service import get_notify_service
 
+# SaaS 模块导入（确保模型注册到 Base.metadata）
+import saas.models
+from saas.api import router as saas_router
 
 # 全局状态
 whatsapp_client = None
@@ -270,6 +273,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# 注册 SaaS API 路由
+app.include_router(saas_router)
 
 # 挂载静态文件
 import os

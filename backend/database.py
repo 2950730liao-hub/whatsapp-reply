@@ -255,6 +255,7 @@ class LLMModel(Base):
 
 def init_db():
     """初始化数据库（自动迁移列）"""
+    import saas.models
     Base.metadata.create_all(bind=engine)
     
     # 自动迁移：检查 messages 表是否有 is_processed 列
